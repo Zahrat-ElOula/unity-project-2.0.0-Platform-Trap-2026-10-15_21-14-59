@@ -667,6 +667,90 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 566755222}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &619693388
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 619693389}
+  - component: {fileID: 619693390}
+  m_Layer: 0
+  m_Name: VRUIManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &619693389
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619693388}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1109809716}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &619693390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619693388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2009197b14bd57a4198562f19e39aa26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  elementPrefabs:
+  - {fileID: 4652329573806549489, guid: 360acb3a97dfec44db3bee3cb37ea530, type: 3}
+  - {fileID: 4652329573806549489, guid: d5daf904b8210f14ea859e571bf1d8fa, type: 3}
+  - {fileID: 4652329573806549489, guid: b4def1dd3fccd4b44b95baffd5c18d15, type: 3}
+  - {fileID: 4652329573806549489, guid: 5bea068782e70f24baa93b03ce5e692f, type: 3}
+  - {fileID: 4652329573806549489, guid: 507e5c09bece0d048b6fbd780a4c2204, type: 3}
+  - {fileID: 4652329573806549489, guid: b746921a1bab04d4ebcb506fb02fd9ac, type: 3}
+  - {fileID: 4652329573806549489, guid: 1d56ac6b05ae9ba4da19eb839cd4adab, type: 3}
+  - {fileID: 4652329573806549489, guid: bbab41319b65e33479d6256b9f21d702, type: 3}
+  - {fileID: 4652329573806549489, guid: 0c020586ff3d64f4b8dfde05d292d41c, type: 3}
+  - {fileID: 4652329573806549489, guid: 87b4803ec1906a8478b293ecfe28db19, type: 3}
+  - {fileID: 4652329573806549489, guid: 307cd5ca8c559ec4aac66448edd961f7, type: 3}
+  elementLabels:
+  - Platform Start
+  - Platform End
+  - Checkpoint
+  - Classical 80
+  - Classical 360
+  - Classical 520
+  - Move 520 (mobile)
+  - Trampoline
+  - Trap Bumper
+  - Trap Fan
+  - Trap Shooter
+  levelRoot: {fileID: 274466027}
+  spawnPoint: {fileID: 185054916}
+  spawnInFrontOfHead: 1
+  spawnDistance: 1.3
+  spawnHeight: 1
+  followHead: 1
+  paletteDistance: 1.7
+  paletteVerticalOffset: -0.15
+  paletteSize: {x: 520, y: 700}
+  paletteScale: 0.0012
+  onDeleteRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  onExportRequested:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &693090118
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -974,6 +1058,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1944319133}
+  - {fileID: 619693389}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1144640547

@@ -47,6 +47,55 @@ namespace FactoryFrenzy.EditorTools
             "Assets/XR Interaction Toolkit/Starter Assets/Prefabs/XR Interaction Setup.prefab";
         public const string DecorFolder = "Assets/AurynSky/Forest Pack/Prefabs";
 
+        /// <summary>Dossier des prefabs sources fournis par le binome.</summary>
+        public const string SourcePrefabsFolder = "Assets/FactoryFrenzy/Prefabs/Platform and Trap";
+
+        /// <summary>Dossier des copies "RV" des prefabs (avec VR_EditableElement).</summary>
+        public const string ElementPrefabsFolder = "Assets/FactoryFrenzy/Prefabs_VR_Editor";
+
+        /// <summary>
+        /// Table de correspondance : prefab source -> type logique exporte.
+        /// Les 3 plateformes "Classical" partagent le meme type (Platform_Classical)
+        /// mais des libelles d'interface differents.
+        /// </summary>
+        private static readonly ElementDefinition[] s_Elements =
+        {
+            new ElementDefinition("Platform Start", "Platform_Start", "Platform Start"),
+            new ElementDefinition("Platform End", "Platform_End", "Platform End"),
+            new ElementDefinition("Platform Checkpoint", "Platform_Checkpoint", "Checkpoint"),
+            new ElementDefinition("Platform Classical 80", "Platform_Classical", "Classical 80"),
+            new ElementDefinition("Platform Classical 360", "Platform_Classical", "Classical 360"),
+            new ElementDefinition("Platform Classical 520", "Platform_Classical", "Classical 520"),
+            new ElementDefinition("Platform Move 520", "Platform_Move", "Move 520 (mobile)",
+                hasMovement: true, moveOffset: new Vector3(0f, 0f, 4f), moveDuration: 3f),
+            new ElementDefinition("Platform Trampoline", "Platform_Trampoline", "Trampoline"),
+            new ElementDefinition("Trap bumper", "Trap_Bumper", "Trap Bumper"),
+            new ElementDefinition("Trap fan", "Trap_Fan", "Trap Fan"),
+            new ElementDefinition("Trap shooter", "Trap_Shooter", "Trap Shooter")
+        };
+
+        /// <summary>Definition d'un element editable (prefab + type exporte).</summary>
+        private sealed class ElementDefinition
+        {
+            public readonly string SourceName;
+            public readonly string ElementType;
+            public readonly string UiLabel;
+            public readonly bool HasMovement;
+            public readonly Vector3 MoveOffset;
+            public readonly float MoveDuration;
+
+            public ElementDefinition(string sourceName, string elementType, string uiLabel,
+                bool hasMovement = false, Vector3 moveOffset = default, float moveDuration = 3f)
+            {
+                SourceName = sourceName;
+                ElementType = elementType;
+                UiLabel = uiLabel;
+                HasMovement = hasMovement;
+                MoveOffset = moveOffset;
+                MoveDuration = moveDuration;
+            }
+        }
+
         // ---------------------------------------------------------------------
         // Menu Unity
         // ---------------------------------------------------------------------
@@ -55,6 +104,12 @@ namespace FactoryFrenzy.EditorTools
         public static void BuildStage1Menu()
         {
             BuildStage1();
+        }
+
+        [MenuItem("Factory Frenzy/Editeur RV/2 - Palette de selection et creation (VR-FP1-2)", false, 101)]
+        public static void BuildStage2Menu()
+        {
+            BuildStage2();
         }
 
         [MenuItem("Factory Frenzy/Editeur RV/Ouvrir la scene DemoScene_Forest", false, 1)]
@@ -141,6 +196,176 @@ namespace FactoryFrenzy.EditorTools
             Debug.Log($"[VRSceneBuilder] Etape 1 terminee. Scene : {ScenePath}\n" +
                       $"Environnement : {environment.childCount} objets de decor, " +
                       $"sol teleportable : {(teleportationArea != null ? "OK" : "absent")}.");
+        }
+
+        // =====================================================================
+        //  ETAPE 2  ->  VR-FP1-2 : selectionner et creer des elements dans une UI
+        //  ---------------------------------------------------------------
+        //  1. Duplication des 11 prefabs du binome vers
+        //     Assets/FactoryFrenzy/Prefabs_VR_Editor/ : les originaux ne sont
+        //     jamais modifies, chaque copie recoit un composant VR_EditableElement
+        //     (type logique + parametres de mouvement de l'export JSON).
+        //  2. Ajout du gestionnaire d'interface dans la scene :
+        //      Managers
+        //      +-- VRUIManager    (VR-FP1-2 : palette RV construite a l'execution)
+        //
+        //  La palette est generee au demarrage par VRUIManager a partir de la
+        //  liste elementPrefabs : aucune intervention manuelle dans l'Inspector
+        //  n'est necessaire.
+        // =====================================================================
+
+        public static void BuildStage2()
+        {
+            if (!File.Exists(ScenePath))
+            {
+                Debug.LogError("[VRSceneBuilder] La scene n'existe pas : executer d'abord l'etape 1.");
+                return;
+            }
+
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 2.1 - Copies RV des prefabs d'elements.
+            List<GameObject> elementPrefabs = EnsureElementPrefabs();
+            if (elementPrefabs.Count == 0)
+            {
+                Debug.LogError("[VRSceneBuilder] Aucun prefab d'element copie : arret de l'etape 2.");
+                return;
+            }
+
+            // 2.2 - Gestionnaire d'interface (palette RV).
+            Transform managers = FindInScene("Managers");
+            if (managers == null)
+            {
+                Debug.LogError("[VRSceneBuilder] Objet 'Managers' introuvable : executer d'abord l'etape 1.");
+                return;
+            }
+
+            Transform existing = managers.Find("VRUIManager");
+            GameObject uiGo = existing != null ? existing.gameObject : CreateEmpty("VRUIManager", Vector3.zero, managers).gameObject;
+
+            VRUIManager uiManager = uiGo.GetComponent<VRUIManager>();
+            if (uiManager == null) uiManager = uiGo.AddComponent<VRUIManager>();
+
+            uiManager.elementPrefabs = elementPrefabs;
+            uiManager.elementLabels = BuildLabels();
+
+            Transform levelRoot = FindInScene("Level_Elements");
+            if (levelRoot != null) uiManager.levelRoot = levelRoot;
+
+            Transform spawnPoint = FindInScene("SpawnPoint");
+            if (spawnPoint != null) uiManager.spawnPoint = spawnPoint;
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[VRSceneBuilder] Etape 2 terminee : {elementPrefabs.Count} prefabs d'elements dans " +
+                      $"{ElementPrefabsFolder} et palette RV branchee dans la scene.");
+        }
+
+        /// <summary>
+        /// Duplique les prefabs sources vers Prefabs_VR_Editor (si necessaire)
+        /// puis configure leur composant VR_EditableElement.
+        /// </summary>
+        private static List<GameObject> EnsureElementPrefabs()
+        {
+            if (!Directory.Exists(ElementPrefabsFolder))
+            {
+                Directory.CreateDirectory(ElementPrefabsFolder);
+                AssetDatabase.Refresh();
+            }
+
+            List<GameObject> result = new List<GameObject>();
+
+            foreach (ElementDefinition definition in s_Elements)
+            {
+                string sourcePath = SourcePrefabsFolder + "/" + definition.SourceName + ".prefab";
+                string targetPath = ElementPrefabsFolder + "/" + definition.SourceName + ".prefab";
+
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath) == null)
+                {
+                    Debug.LogWarning("[VRSceneBuilder] Prefab source introuvable : " + sourcePath);
+                    continue;
+                }
+
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(targetPath) == null)
+                {
+                    if (!AssetDatabase.CopyAsset(sourcePath, targetPath))
+                    {
+                        Debug.LogWarning("[VRSceneBuilder] Copie impossible : " + sourcePath);
+                        continue;
+                    }
+
+                    AssetDatabase.ImportAsset(targetPath);
+                }
+
+                ConfigureElementPrefab(targetPath, definition);
+
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(targetPath);
+                if (prefab != null) result.Add(prefab);
+            }
+
+            AssetDatabase.SaveAssets();
+            return result;
+        }
+
+        /// <summary>Ajoute / met a jour le composant VR_EditableElement d'un prefab copie.</summary>
+        private static void ConfigureElementPrefab(string prefabPath, ElementDefinition definition)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+
+            try
+            {
+                VR_EditableElement element = root.GetComponent<VR_EditableElement>();
+                if (element == null) element = root.AddComponent<VR_EditableElement>();
+
+                element.elementType = definition.ElementType;
+                element.isLocked = false;
+                element.hasMovement = definition.HasMovement;
+                element.moveFrom = Vector3.zero;
+                element.moveTo = definition.HasMovement ? definition.MoveOffset : Vector3.zero;
+                element.duration = definition.MoveDuration;
+
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static string[] BuildLabels()
+        {
+            string[] labels = new string[s_Elements.Length];
+            for (int i = 0; i < s_Elements.Length; i++) labels[i] = s_Elements[i].UiLabel;
+            return labels;
+        }
+
+        /// <summary>Recherche un objet par nom dans la scene active.</summary>
+        private static Transform FindInScene(string name)
+        {
+            Scene scene = SceneManager.GetActiveScene();
+
+            foreach (GameObject root in scene.GetRootGameObjects())
+            {
+                Transform found = FindRecursive(root.transform, name);
+                if (found != null) return found;
+            }
+
+            return null;
+        }
+
+        private static Transform FindRecursive(Transform parent, string name)
+        {
+            if (parent.name == name) return parent;
+
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform found = FindRecursive(parent.GetChild(i), name);
+                if (found != null) return found;
+            }
+
+            return null;
         }
 
         // =====================================================================
