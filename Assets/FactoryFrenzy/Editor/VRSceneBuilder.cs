@@ -112,6 +112,12 @@ namespace FactoryFrenzy.EditorTools
             BuildStage2();
         }
 
+        [MenuItem("Factory Frenzy/Editeur RV/3 - Attraper et placer des objets (VR-FP1-3)", false, 102)]
+        public static void BuildStage3Menu()
+        {
+            BuildStage3();
+        }
+
         [MenuItem("Factory Frenzy/Editeur RV/Ouvrir la scene DemoScene_Forest", false, 1)]
         public static void OpenSceneMenu()
         {
@@ -261,6 +267,138 @@ namespace FactoryFrenzy.EditorTools
 
             Debug.Log($"[VRSceneBuilder] Etape 2 terminee : {elementPrefabs.Count} prefabs d'elements dans " +
                       $"{ElementPrefabsFolder} et palette RV branchee dans la scene.");
+        }
+
+        // =====================================================================
+        //  ETAPE 3  ->  VR-FP1-3 : attraper et placer des objets
+        //  ---------------------------------------------------------------
+        //  1. Chaque prefab de Prefabs_VR_Editor recoit les composants XR qui
+        //     rendent l'element attrapable avec les manettes :
+        //         Rigidbody          (isKinematic = true, useGravity = false)
+        //         XRGrabInteractable (movementType = Kinematic,
+        //                             throwOnDetach = false)
+        //     Les colliders proviennent de la hierarchie du prefab ; si aucun
+        //     collider n'est present, une boite englobante est ajoutee pour que
+        //     l'element reste saisissable.
+        //  2. Ajout du gestionnaire de manipulation dans la scene :
+        //      Managers
+        //      +-- VRGrabManager    (VR-FP1-3)
+        // =====================================================================
+
+        public static void BuildStage3()
+        {
+            if (!File.Exists(ScenePath))
+            {
+                Debug.LogError("[VRSceneBuilder] La scene n'existe pas : executer d'abord l'etape 1.");
+                return;
+            }
+
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            // 3.1 - Composants d'attrape sur les prefabs d'elements.
+            int configured = EnsureGrabComponents();
+            if (configured == 0)
+            {
+                Debug.LogError("[VRSceneBuilder] Aucun prefab d'element configure : executer d'abord l'etape 2.");
+                return;
+            }
+
+            // 3.2 - Gestionnaire de manipulation.
+            Transform managers = FindInScene("Managers");
+            if (managers == null)
+            {
+                Debug.LogError("[VRSceneBuilder] Objet 'Managers' introuvable : executer d'abord l'etape 1.");
+                return;
+            }
+
+            Transform existing = managers.Find("VRGrabManager");
+            GameObject grabGo = existing != null ? existing.gameObject : CreateEmpty("VRGrabManager", Vector3.zero, managers).gameObject;
+
+            VRGrabManager grabManager = grabGo.GetComponent<VRGrabManager>();
+            if (grabManager == null) grabManager = grabGo.AddComponent<VRGrabManager>();
+
+            grabManager.autoAddGrabComponents = true;
+            grabManager.keepElementsFloating = true;
+            grabManager.snapToGridOnRelease = false;
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[VRSceneBuilder] Etape 3 terminee : composants d'attrape sur {configured} prefabs " +
+                      $"et VRGrabManager branche dans la scene.");
+        }
+
+        /// <summary>
+        /// Ajoute / met a jour Rigidbody + XRGrabInteractable sur les prefabs
+        /// d'elements de Prefabs_VR_Editor. Renvoie le nombre de prefabs traites.
+        /// </summary>
+        private static int EnsureGrabComponents()
+        {
+            int configured = 0;
+
+            foreach (ElementDefinition definition in s_Elements)
+            {
+                string targetPath = ElementPrefabsFolder + "/" + definition.SourceName + ".prefab";
+                GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>(targetPath);
+                if (asset == null)
+                {
+                    Debug.LogWarning("[VRSceneBuilder] Prefab d'element introuvable : " + targetPath);
+                    continue;
+                }
+
+                GameObject root = PrefabUtility.LoadPrefabContents(targetPath);
+
+                try
+                {
+                    // Rigidbody cinematique : l'element reste en place (pas de
+                    // gravite) mais peut etre deplace par l'attrape XR.
+                    Rigidbody body = root.GetComponent<Rigidbody>();
+                    if (body == null) body = root.AddComponent<Rigidbody>();
+                    body.isKinematic = true;
+                    body.useGravity = false;
+
+                    // Securite : un interactable sans collider n'est pas saisissable.
+                    if (root.GetComponentInChildren<Collider>(true) == null)
+                    {
+                        AddBoundsCollider(root);
+                    }
+
+                    XRGrabInteractable grab = root.GetComponent<XRGrabInteractable>();
+                    if (grab == null) grab = root.AddComponent<XRGrabInteractable>();
+                    grab.movementType = XRBaseInteractable.MovementType.Kinematic;
+                    grab.throwOnDetach = false;
+                    grab.retainTransformParent = true;
+
+                    PrefabUtility.SaveAsPrefabAsset(root, targetPath);
+                    configured++;
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(root);
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            return configured;
+        }
+
+        /// <summary>
+        /// Ajoute un BoxCollider englobant les rendus d'un prefab sans collider.
+        /// </summary>
+        private static void AddBoundsCollider(GameObject root)
+        {
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) return;
+
+            Bounds bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+
+            BoxCollider box = root.AddComponent<BoxCollider>();
+            box.center = root.transform.InverseTransformPoint(bounds.center);
+            box.size = bounds.size;
+            Debug.Log($"[VRSceneBuilder] BoxCollider englobant ajoute sur {root.name} " +
+                      $"(aucun collider dans le prefab).");
         }
 
         /// <summary>
