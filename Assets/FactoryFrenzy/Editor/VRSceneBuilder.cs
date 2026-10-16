@@ -126,6 +126,12 @@ namespace FactoryFrenzy.EditorTools
             BuildStage4();
         }
 
+        [MenuItem("Factory Frenzy/Editeur RV/5 - Export JSON du niveau (VR-FP1-5)", false, 104)]
+        public static void BuildStage5Menu()
+        {
+            BuildStage5();
+        }
+
         [MenuItem("Factory Frenzy/Editeur RV/Ouvrir la scene DemoScene_Forest", false, 1)]
         public static void OpenSceneMenu()
         {
@@ -485,6 +491,68 @@ namespace FactoryFrenzy.EditorTools
             Debug.Log($"[VRSceneBuilder] Etape 4 terminee : VRDeleteManager cree, rayon " +
                       $"{(deleteManager.rayInteractor != null ? deleteManager.rayInteractor.name : "absent")} " +
                       $"et bouton 'Supprimer' relie a DeleteTargeted.");
+        }
+
+        // =====================================================================
+        //  ETAPE 5  ->  VR-FP1-5 : export JSON du niveau
+        //  ---------------------------------------------------------------
+        //  1. Ajout du gestionnaire d'export :
+        //      Managers
+        //      +-- VRLevelExporter    (VR-FP1-5)
+        //  2. Relier le bouton "Exporter (JSON)" de la palette RV :
+        //      VRUIManager.onExportRequested  ->  VRLevelExporter.ExportLevel
+        // =====================================================================
+
+        public static void BuildStage5()
+        {
+            if (!File.Exists(ScenePath))
+            {
+                Debug.LogError("[VRSceneBuilder] La scene n'existe pas : executer d'abord l'etape 1.");
+                return;
+            }
+
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            Transform managers = FindInScene("Managers");
+            if (managers == null)
+            {
+                Debug.LogError("[VRSceneBuilder] Objet 'Managers' introuvable : executer d'abord l'etape 1.");
+                return;
+            }
+
+            // 5.1 - Gestionnaire d'export.
+            Transform existing = managers.Find("VRLevelExporter");
+            GameObject exportGo = existing != null ? existing.gameObject : CreateEmpty("VRLevelExporter", Vector3.zero, managers).gameObject;
+
+            VRLevelExporter exporter = exportGo.GetComponent<VRLevelExporter>();
+            if (exporter == null) exporter = exportGo.AddComponent<VRLevelExporter>();
+
+            exporter.levelName = "DemoScene_Forest";
+            exporter.exportToProjectFolder = true;
+            exporter.createDefaultInputAction = true;
+
+            // 5.2 - Relier le bouton "Exporter (JSON)" de la palette RV.
+            VRUIManager uiManager = FindInSceneComponent<VRUIManager>();
+            if (uiManager != null)
+            {
+                if (uiManager.onExportRequested.GetPersistentEventCount() == 0)
+                {
+                    UnityEventTools.AddVoidPersistentListener(
+                        uiManager.onExportRequested,
+                        new UnityAction(exporter.ExportLevel));
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[VRSceneBuilder] VRUIManager introuvable : bouton 'Exporter (JSON)' non relie " +
+                                 "(executer l'etape 2 d'abord).");
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[VRSceneBuilder] Etape 5 terminee : VRLevelExporter cree et bouton 'Exporter (JSON)' relie a ExportLevel.");
         }
 
         /// <summary>
