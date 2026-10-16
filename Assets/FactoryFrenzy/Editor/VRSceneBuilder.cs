@@ -24,8 +24,10 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEditor.Events;
 using FactoryFrenzy.VR;
 
 namespace FactoryFrenzy.EditorTools
@@ -118,6 +120,12 @@ namespace FactoryFrenzy.EditorTools
             BuildStage3();
         }
 
+        [MenuItem("Factory Frenzy/Editeur RV/4 - Supprimer des elements du niveau (VR-FP1-4)", false, 103)]
+        public static void BuildStage4Menu()
+        {
+            BuildStage4();
+        }
+
         [MenuItem("Factory Frenzy/Editeur RV/Ouvrir la scene DemoScene_Forest", false, 1)]
         public static void OpenSceneMenu()
         {
@@ -182,7 +190,7 @@ namespace FactoryFrenzy.EditorTools
 
             GameObject teleportationGo = CreateEmpty("VRTeleportationManager", Vector3.zero, managersRoot.transform).gameObject;
             VRTeleportationManager teleportationManager = teleportationGo.AddComponent<VRTeleportationManager>();
-            teleportationManager.teleportationProvider = Object.FindObjectOfType<TeleportationProvider>();
+            teleportationManager.teleportationProvider = UnityEngine.Object.FindObjectOfType<TeleportationProvider>();
             teleportationManager.teleportationArea = teleportationArea;
             teleportationManager.spawnPoint = spawnPoint;
 
@@ -399,6 +407,125 @@ namespace FactoryFrenzy.EditorTools
             box.size = bounds.size;
             Debug.Log($"[VRSceneBuilder] BoxCollider englobant ajoute sur {root.name} " +
                       $"(aucun collider dans le prefab).");
+        }
+
+        // =====================================================================
+        //  ETAPE 4  ->  VR-FP1-4 : supprimer des elements du niveau
+        //  ---------------------------------------------------------------
+        //  1. Ajout du gestionnaire de suppression :
+        //      Managers
+        //      +-- VRDeleteManager    (VR-FP1-4)
+        //         - rayInteractor    : rayon d'INTERACTION de la manette droite
+        //                              (le rayon de teleportation est ignore)
+        //         - grabManager      : VRGrabManager (suppression interdite
+        //                              pendant une prise)
+        //  2. Relier le bouton "Supprimer" de la palette RV :
+        //      VRUIManager.onDeleteRequested  ->  VRDeleteManager.DeleteTargeted
+        // =====================================================================
+
+        public static void BuildStage4()
+        {
+            if (!File.Exists(ScenePath))
+            {
+                Debug.LogError("[VRSceneBuilder] La scene n'existe pas : executer d'abord l'etape 1.");
+                return;
+            }
+
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            Transform managers = FindInScene("Managers");
+            if (managers == null)
+            {
+                Debug.LogError("[VRSceneBuilder] Objet 'Managers' introuvable : executer d'abord l'etape 1.");
+                return;
+            }
+
+            // 4.1 - Gestionnaire de suppression.
+            Transform existing = managers.Find("VRDeleteManager");
+            GameObject deleteGo = existing != null ? existing.gameObject : CreateEmpty("VRDeleteManager", Vector3.zero, managers).gameObject;
+
+            VRDeleteManager deleteManager = deleteGo.GetComponent<VRDeleteManager>();
+            if (deleteManager == null) deleteManager = deleteGo.AddComponent<VRDeleteManager>();
+
+            // Rayon d'interaction de la main droite (jamais le rayon de teleportation).
+            deleteManager.rayInteractor = FindRightHandInteractionRayInScene();
+            deleteManager.grabManager = UnityEngine.Object.FindObjectOfType<VRGrabManager>();
+            deleteManager.preventDeleteWhileGrabbing = true;
+            deleteManager.createDefaultInputAction = true;
+
+            if (deleteManager.rayInteractor == null)
+            {
+                Debug.LogWarning("[VRSceneBuilder] Rayon d'interaction droite introuvable dans la scene " +
+                                 "(le VRDeleteManager le recherchera au lancement).");
+            }
+
+            // 4.2 - Relier le bouton "Supprimer" de la palette RV.
+            VRUIManager uiManager = FindInSceneComponent<VRUIManager>();
+            if (uiManager != null)
+            {
+                // Idempotent : on n'ajoute le lien que s'il n'existe pas deja,
+                // l'etape reste reproductible si on la relance.
+                if (uiManager.onDeleteRequested.GetPersistentEventCount() == 0)
+                {
+                    UnityEventTools.AddVoidPersistentListener(
+                        uiManager.onDeleteRequested,
+                        new UnityAction(deleteManager.DeleteTargeted));
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[VRSceneBuilder] VRUIManager introuvable : bouton 'Supprimer' non relie " +
+                                 "(executer l'etape 2 d'abord).");
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[VRSceneBuilder] Etape 4 terminee : VRDeleteManager cree, rayon " +
+                      $"{(deleteManager.rayInteractor != null ? deleteManager.rayInteractor.name : "absent")} " +
+                      $"et bouton 'Supprimer' relie a DeleteTargeted.");
+        }
+
+        /// <summary>
+        /// Retourne le rayon d'interaction de la main droite : on ignore les
+        /// rayons de teleportation (gabarit "Teleport Interactor") pour ne
+        /// viser que les elements editables.
+        /// </summary>
+        private static XRRayInteractor FindRightHandInteractionRayInScene()
+        {
+            XRRayInteractor fallback = null;
+
+            foreach (XRRayInteractor ray in Object.FindObjectsOfType<XRRayInteractor>())
+            {
+                string path = GetHierarchyPath(ray.transform).ToLowerInvariant();
+
+                if (path.Contains("teleport")) continue; // rayon de teleportation
+                if (path.Contains("right")) return ray;  // main droite
+                if (fallback == null) fallback = ray;
+            }
+
+            return fallback;
+        }
+
+        /// <summary>Chemin hierarchique complet d'un transform (ex : "A/B/C").</summary>
+        private static string GetHierarchyPath(Transform transform)
+        {
+            string path = transform.name;
+
+            while (transform.parent != null)
+            {
+                transform = transform.parent;
+                path = transform.name + "/" + path;
+            }
+
+            return path;
+        }
+
+        /// <summary>Recherche un composant de la scene actif par type.</summary>
+        private static T FindInSceneComponent<T>() where T : Component
+        {
+            return UnityEngine.Object.FindObjectOfType<T>();
         }
 
         /// <summary>
