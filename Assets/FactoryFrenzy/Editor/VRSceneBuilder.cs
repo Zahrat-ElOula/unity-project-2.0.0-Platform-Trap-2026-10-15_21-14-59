@@ -132,6 +132,18 @@ namespace FactoryFrenzy.EditorTools
             BuildStage5();
         }
 
+        [MenuItem("Factory Frenzy/Editeur RV/6 - Son et vibration (VR-FP1-6)", false, 105)]
+        public static void BuildStage6Menu()
+        {
+            BuildStage6();
+        }
+
+        [MenuItem("Factory Frenzy/Editeur RV/Construire toutes les etapes (1..6)", false, 200)]
+        public static void BuildAllStagesMenu()
+        {
+            BuildAllStages();
+        }
+
         [MenuItem("Factory Frenzy/Editeur RV/Ouvrir la scene DemoScene_Forest", false, 1)]
         public static void OpenSceneMenu()
         {
@@ -553,6 +565,120 @@ namespace FactoryFrenzy.EditorTools
             AssetDatabase.SaveAssets();
 
             Debug.Log($"[VRSceneBuilder] Etape 5 terminee : VRLevelExporter cree et bouton 'Exporter (JSON)' relie a ExportLevel.");
+        }
+
+        // =====================================================================
+        //  ETAPE 6  ->  VR-FP1-6 : son et vibration
+        //  ---------------------------------------------------------------
+        //  1. Ajout du gestionnaire de feedback :
+        //      Managers
+        //      +-- VRFeedbackManager    (VR-FP1-6)
+        //         - leftController  / rightController   : detectees a partir des
+        //                              XRBaseController du rig XR
+        //         - generer des bips par code (aucun AudioClip requis)
+        //  2. VRFeedbackManager s'abonne a VRLevelEvents.FeedbackRequested :
+        //     cette liaison est deja dans le code du script (OnEnable), elle est
+        //     donc automatique des que le composant est present dans la scene.
+        // =====================================================================
+
+        public static void BuildStage6()
+        {
+            if (!File.Exists(ScenePath))
+            {
+                Debug.LogError("[VRSceneBuilder] La scene n'existe pas : executer d'abord l'etape 1.");
+                return;
+            }
+
+            Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            Transform managers = FindInScene("Managers");
+            if (managers == null)
+            {
+                Debug.LogError("[VRSceneBuilder] Objet 'Managers' introuvable : executer d'abord l'etape 1.");
+                return;
+            }
+
+            // 6.1 - Gestionnaire de feedback (son + vibration).
+            Transform existing = managers.Find("VRFeedbackManager");
+            GameObject feedbackGo = existing != null ? existing.gameObject : CreateEmpty("VRFeedbackManager", Vector3.zero, managers).gameObject;
+
+            VRFeedbackManager feedbackManager = feedbackGo.GetComponent<VRFeedbackManager>();
+            if (feedbackManager == null) feedbackManager = feedbackGo.AddComponent<VRFeedbackManager>();
+
+            feedbackManager.generateDefaultClips = true;
+            feedbackManager.volume = 0.6f;
+            feedbackManager.vibrateBothControllers = true;
+            feedbackManager.selectAmplitude = 0.15f;
+            feedbackManager.selectDuration = 0.05f;
+            feedbackManager.placeAmplitude = 0.25f;
+            feedbackManager.placeDuration = 0.08f;
+            feedbackManager.deleteAmplitude = 0.40f;
+            feedbackManager.deleteDuration = 0.12f;
+            feedbackManager.saveAmplitude = 0.35f;
+            feedbackManager.saveDuration = 0.18f;
+            feedbackManager.errorAmplitude = 0.60f;
+            feedbackManager.errorDuration = 0.20f;
+
+            // Assignation des manettes (XRBaseController) : recherche dans toute la scene.
+            AssignControllers(feedbackManager);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[VRSceneBuilder] Etape 6 terminee : VRFeedbackManager cree, son genere par code, " +
+                      $"vibration sur {(feedbackManager.vibrateBothControllers ? "les deux manettes" : "une seule manette")}.");
+        }
+
+        /// <summary>
+        /// Assigne les manettes gauche/droite au VRFeedbackManager en recherchant
+        /// les XRBaseController dans la scene (priorite : elements contenant "Left"/"Right").
+        /// </summary>
+        private static void AssignControllers(VRFeedbackManager feedbackManager)
+        {
+            if (feedbackManager == null) return;
+
+            XRBaseController[] controllers = UnityEngine.Object.FindObjectsOfType<XRBaseController>();
+
+            foreach (XRBaseController controller in controllers)
+            {
+                string path = GetHierarchyPath(controller.transform).ToLowerInvariant();
+
+                if (feedbackManager.leftController == null && path.Contains("left"))
+                {
+                    feedbackManager.leftController = controller;
+                    continue;
+                }
+
+                if (feedbackManager.rightController == null && path.Contains("right"))
+                {
+                    feedbackManager.rightController = controller;
+                }
+            }
+
+            // Repli si non trouvees.
+            if (feedbackManager.leftController == null && controllers.Length > 0) feedbackManager.leftController = controllers[0];
+            if (feedbackManager.rightController == null && controllers.Length > 1) feedbackManager.rightController = controllers[1];
+        }
+
+        public static void BuildAllStages()
+        {
+            BuildStage1();
+            BuildStage2();
+            BuildStage3();
+            BuildStage4();
+            BuildStage5();
+            BuildStage6();
+
+            if (File.Exists(ScenePath))
+            {
+                Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene, ScenePath);
+                AssetDatabase.SaveAssets();
+            }
+
+            Debug.Log("[VRSceneBuilder] BuildAllStages termine : les 6 etapes ont ete executees avec succes.");
         }
 
         /// <summary>

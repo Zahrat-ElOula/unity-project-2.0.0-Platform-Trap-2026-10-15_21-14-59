@@ -1064,6 +1064,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6803edce0201f574f923fd9d10e5b30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &774613857 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4531192050553011021, guid: 895f6f3c2d334633b5800312285058d2,
+    type: 3}
+  m_PrefabInstance: {fileID: 774613854}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: caff514de9b15ad48ab85dcff5508221, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &774613858 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6206097798716546338, guid: 895f6f3c2d334633b5800312285058d2,
+    type: 3}
+  m_PrefabInstance: {fileID: 774613854}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: caff514de9b15ad48ab85dcff5508221, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &996131158
 GameObject:
   m_ObjectHideFlags: 0
@@ -1160,6 +1184,7 @@ Transform:
   - {fileID: 1178392343}
   - {fileID: 996131159}
   - {fileID: 1794386824}
+  - {fileID: 1893618375}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1144640547
@@ -1680,6 +1705,71 @@ MonoBehaviour:
       m_Flags: 0
     m_Reference: {fileID: 0}
   logExport: 1
+--- !u!1 &1893618374
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1893618375}
+  - component: {fileID: 1893618376}
+  m_Layer: 0
+  m_Name: VRFeedbackManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1893618375
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1893618374}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1109809716}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1893618376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1893618374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 322587998a802684b977d59c23f6866f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioSource: {fileID: 0}
+  selectClip: {fileID: 0}
+  placeClip: {fileID: 0}
+  deleteClip: {fileID: 0}
+  saveClip: {fileID: 0}
+  errorClip: {fileID: 0}
+  generateDefaultClips: 1
+  volume: 0.6
+  leftController: {fileID: 774613858}
+  rightController: {fileID: 774613857}
+  vibrateBothControllers: 1
+  selectAmplitude: 0.15
+  selectDuration: 0.05
+  placeAmplitude: 0.25
+  placeDuration: 0.08
+  deleteAmplitude: 0.4
+  deleteDuration: 0.12
+  saveAmplitude: 0.35
+  saveDuration: 0.18
+  errorAmplitude: 0.6
+  errorDuration: 0.2
 --- !u!1 &1944319132
 GameObject:
   m_ObjectHideFlags: 0
