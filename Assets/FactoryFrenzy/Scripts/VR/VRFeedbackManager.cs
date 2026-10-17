@@ -1,23 +1,4 @@
-﻿// =============================================================================
-//  Factory Frenzy - Editeur de niveaux RV
-//  VRFeedbackManager.cs               ->  fonctionnalite VR-FP1-6
-//  ---------------------------------------------------------------------------
-//  "Son et vibration"
-//
-//  Ce gestionnaire est le seul responsable du retour sensoriel :
-//      * il s'abonne au bus d'evenements VRLevelEvents.FeedbackRequested ;
-//      * selon le type demande (Select / Place / Delete / Save / Error) il
-//        joue un son et envoie une impulsion haptique aux manettes ;
-//      * il fournit aussi des methodes publiques (PlaySelectFeedback(), ...)
-//        utilisables directement depuis l'Inspector (bouton, UnityEvent).
-//
-//  Aucun fichier audio n'est fourni par le projet : si les AudioClip ne sont
-//  pas renseignes, le script genere des "bips" par code (GenerateDefaultClips).
-//  Il suffit de glisser des AudioClip dans les champs pour les remplacer.
-//
-//  Les amplitudes / durees des vibrations sont reglables dans l'Inspector.
-// =============================================================================
-
+﻿
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
 

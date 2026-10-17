@@ -70,7 +70,7 @@ namespace FactoryFrenzy.EditorTools
             new ElementDefinition("Platform Classical 520", "Platform_Classical", "Classical 520"),
             new ElementDefinition("Platform Move 520", "Platform_Move", "Move 520 (mobile)",
                 hasMovement: true, moveOffset: new Vector3(0f, 0f, 4f), moveDuration: 3f),
-            new ElementDefinition("Platform Trampoline", "Platform_Trampoline", "Trampoline"),
+            new ElementDefinition("Platform Trampoline", "Trap_Trampoline", "Trampoline"),
             new ElementDefinition("Trap bumper", "Trap_Bumper", "Trap Bumper"),
             new ElementDefinition("Trap fan", "Trap_Fan", "Trap Fan"),
             new ElementDefinition("Trap shooter", "Trap_Shooter", "Trap Shooter")
@@ -256,8 +256,10 @@ namespace FactoryFrenzy.EditorTools
 
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
-            // 2.1 - Copies RV des prefabs d'elements.
-            List<GameObject> elementPrefabs = EnsureElementPrefabs();
+            // 2.1 - Prefabs source communs au jeu PC et a l'editeur RV.
+            // Les composants d'edition sont ajoutes uniquement sur les instances
+            // creees dans la scene, jamais sur les assets d'origine.
+            List<GameObject> elementPrefabs = GetSourceElementPrefabs();
             if (elementPrefabs.Count == 0)
             {
                 Debug.LogError("[VRSceneBuilder] Aucun prefab d'element copie : arret de l'etape 2.");
@@ -291,8 +293,8 @@ namespace FactoryFrenzy.EditorTools
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.SaveAssets();
 
-            Debug.Log($"[VRSceneBuilder] Etape 2 terminee : {elementPrefabs.Count} prefabs d'elements dans " +
-                      $"{ElementPrefabsFolder} et palette RV branchee dans la scene.");
+            Debug.Log($"[VRSceneBuilder] Etape 2 terminee : {elementPrefabs.Count} prefabs sources de " +
+                      $"{SourcePrefabsFolder} sont relies a la palette RV.");
         }
 
         // =====================================================================
@@ -321,8 +323,9 @@ namespace FactoryFrenzy.EditorTools
 
             Scene scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
 
-            // 3.1 - Composants d'attrape sur les prefabs d'elements.
-            int configured = EnsureGrabComponents();
+            // Les composants XR sont ajoutes a l'instance lors de sa creation
+            // par VRGrabManager. Les prefabs source du binome ne sont jamais modifies.
+            int configured = GetSourceElementPrefabs().Count;
             if (configured == 0)
             {
                 Debug.LogError("[VRSceneBuilder] Aucun prefab d'element configure : executer d'abord l'etape 2.");
@@ -723,8 +726,27 @@ namespace FactoryFrenzy.EditorTools
         }
 
         /// <summary>
-        /// Duplique les prefabs sources vers Prefabs_VR_Editor (si necessaire)
-        /// puis configure leur composant VR_EditableElement.
+        /// Retourne les prefabs sources fournis par le binome. Ils sont la source
+        /// unique commune au jeu PC et a l'editeur RV.
+        /// </summary>
+        private static List<GameObject> GetSourceElementPrefabs()
+        {
+            List<GameObject> result = new List<GameObject>();
+            foreach (ElementDefinition definition in s_Elements)
+            {
+                string sourcePath = SourcePrefabsFolder + "/" + definition.SourceName + ".prefab";
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
+                if (prefab == null)
+                    Debug.LogWarning("[VRSceneBuilder] Prefab source introuvable : " + sourcePath);
+                else
+                    result.Add(prefab);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Obsolete : les assets Prefabs_VR_Editor historiques restent intacts,
+        /// mais ne sont plus references par l'editeur RV.
         /// </summary>
         private static List<GameObject> EnsureElementPrefabs()
         {

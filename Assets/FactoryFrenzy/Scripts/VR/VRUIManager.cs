@@ -104,6 +104,7 @@ namespace FactoryFrenzy.VR
         private Canvas m_Canvas;
         private Transform m_CanvasTransform;
         private TMP_Text m_StatusText;
+        private TMP_InputField m_LevelNameInput;
         private readonly List<Image> m_TypeButtonBackgrounds = new List<Image>();
         private Camera m_Camera;
 
@@ -173,6 +174,12 @@ namespace FactoryFrenzy.VR
             // Ligne d'etat en haut de la palette.
             m_StatusText = CreateText(canvasGo.transform, "Selection : -", 20f, 34f);
 
+            // Nom du fichier JSON : saisissable au clavier avec le simulateur
+            // ou avec le clavier virtuel du casque.
+            m_LevelNameInput = CreateInputField(canvasGo.transform, "Nom du niveau", "DemoScene_Forest", 38f);
+            m_LevelNameInput.onValueChanged.AddListener(SetExportFileName);
+            SetExportFileName(m_LevelNameInput.text);
+
             // Un bouton par prefab d'element.
             for (int i = 0; i < elementPrefabs.Count; i++)
             {
@@ -197,6 +204,41 @@ namespace FactoryFrenzy.VR
             exportButton.onClick.AddListener(() => onExportRequested.Invoke());
 
             PlacePaletteInFrontOfCamera();
+        }
+
+        /// <summary>Met a jour le nom utilise par l'export JSON.</summary>
+        public void SetExportFileName(string fileName)
+        {
+            VRLevelExporter exporter = FindObjectOfType<VRLevelExporter>();
+            if (exporter != null) exporter.SetLevelName(fileName);
+        }
+
+        private static TMP_InputField CreateInputField(Transform parent, string placeholderText, string initialValue, float height)
+        {
+            GameObject go = new GameObject("Nom du fichier", typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+
+            Image image = go.AddComponent<Image>();
+            image.color = new Color(0.12f, 0.13f, 0.16f, 0.95f);
+
+            TMP_InputField input = go.AddComponent<TMP_InputField>();
+            LayoutElement layout = go.AddComponent<LayoutElement>();
+            layout.preferredHeight = height;
+            layout.minHeight = height;
+
+            TMP_Text text = CreateText(go.transform, initialValue, 18f, height);
+            text.alignment = TextAlignmentOptions.MidlineLeft;
+            text.margin = new Vector4(10f, 0f, 10f, 0f);
+            TMP_Text placeholder = CreateText(go.transform, placeholderText, 18f, height);
+            placeholder.fontStyle = FontStyles.Italic;
+            placeholder.color = new Color(0.7f, 0.7f, 0.7f, 0.75f);
+            placeholder.margin = new Vector4(10f, 0f, 10f, 0f);
+
+            input.textViewport = go.GetComponent<RectTransform>();
+            input.textComponent = text;
+            input.placeholder = placeholder;
+            input.text = initialValue;
+            return input;
         }
 
         private string GetPrefabLabel(GameObject prefab, int index)
@@ -269,7 +311,9 @@ namespace FactoryFrenzy.VR
                 if (prefab == null) continue;
 
                 VR_EditableElement element = prefab.GetComponent<VR_EditableElement>();
-                string type = element != null ? element.GetTypeName() : prefab.name;
+                string type = element != null && !string.IsNullOrEmpty(element.elementType)
+                    ? element.GetTypeName()
+                    : VR_EditableElement.GetTypeForSourcePrefab(prefab.name);
 
                 if (type == elementType)
                 {
@@ -333,11 +377,13 @@ namespace FactoryFrenzy.VR
             GameObject created = Instantiate(prefab, position, rotation, levelRoot);
             created.name = prefab.name;
 
-            // Securite : un element cree doit toujours porter son composant.
-            if (created.GetComponent<VR_EditableElement>() == null)
-            {
-                created.AddComponent<VR_EditableElement>();
-            }
+            // Le prefab source est commun a l'editeur RV et au jeu PC. Les
+            // composants propres a l'edition sont ajoutes uniquement a
+            // l'instance creee, jamais a l'asset du binome.
+            VR_EditableElement editable = created.GetComponent<VR_EditableElement>();
+            if (editable == null)
+                editable = created.AddComponent<VR_EditableElement>();
+            editable.ConfigureFromSourcePrefab(prefab.name);
 
             // Prevenir les autres fonctionnalites (VRGrabManager, ...).
             VRLevelEvents.RaiseElementSpawned(created);

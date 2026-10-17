@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.farlocus.locus": {
+      "version": "file:com.farlocus.locus",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.addressables": {
       "version": "1.21.17",
       "depth": 0,
