@@ -1,23 +1,3 @@
-// =============================================================================
-//  Factory Frenzy - Editeur de niveaux RV
-//  VRGrabManager.cs                   ->  fonctionnalite VR-FP1-3
-//  ---------------------------------------------------------------------------
-//  "Attraper et placer des objets"
-//
-//  Chaque element editable porte un composant XRGrabInteractable (XR
-//  Interaction Toolkit) : l'attraper se fait donc nativement, avec le rayon ou
-//  la main directe des manettes.
-//
-//  Ce gestionnaire ajoute la logique "editeur de niveau" :
-//      * il s'abonne aux elements crees (VRLevelEvents.ElementSpawned) et
-//        branche automatiquement les composants XR si besoin ;
-//      * il met l'element en surbrillance pendant la prise (VR-FP1-2) ;
-//      * il signale la prise / le depot (OnGrabStateChanged) : VRDeleteManager
-//        s'en sert pour interdire la suppression pendant une manipulation ;
-//      * il place l'element au sol ou sur la grille au relachement (option) ;
-//      * il demande le retour sonore + vibration (selection puis depot).
-// =============================================================================
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -25,57 +5,26 @@ using UnityEngine.XR.Interaction.Toolkit;
 
 namespace FactoryFrenzy.VR
 {
-    /// <summary>
-    /// VR-FP1-3 : attraper et placer des objets.
-    /// </summary>
     [DisallowMultipleComponent]
     public class VRGrabManager : MonoBehaviour
     {
-        // ---------------------------------------------------------------------
-        // Options
-        // ---------------------------------------------------------------------
-
         [Header("Options de manipulation")]
-        [Tooltip("Ajoute automatiquement Rigidbody + XRGrabInteractable si le prefab n'en a pas.")]
         public bool autoAddGrabComponents = true;
-
-        [Tooltip("Aligner l'element sur une grille au relachement.")]
         public bool snapToGridOnRelease = false;
-
-        [Tooltip("Pas de la grille (metres).")]
         public float gridSize = 0.25f;
-
-        [Tooltip("Empecher l'element de tomber (les elements restent en place).")]
         public bool keepElementsFloating = true;
-
-        [Tooltip("Logs Console des prises / depots.")]
         public bool logGrabs = false;
 
-        // ---------------------------------------------------------------------
-        // Evenements
-        // ---------------------------------------------------------------------
-
-        /// <summary>Passe a true a la prise, false au relachement.</summary>
         public event Action<bool> OnGrabStateChanged;
-
-        /// <summary>L'utilisateur tient-il un element en ce moment ?</summary>
         public bool IsGrabbing { get; private set; }
-
-        /// <summary>Element actuellement tenu (ou null).</summary>
         public VR_EditableElement CurrentElement { get; private set; }
 
         private readonly Dictionary<XRGrabInteractable, VR_EditableElement> m_Tracked =
             new Dictionary<XRGrabInteractable, VR_EditableElement>();
 
-        // ---------------------------------------------------------------------
-        // Cycle de vie Unity
-        // ---------------------------------------------------------------------
-
         private void OnEnable()
         {
             VRLevelEvents.ElementSpawned += RegisterElement;
-
-            // Les elements deja presents dans la scene (ex : decor editable).
             foreach (VR_EditableElement element in VR_EditableElement.All)
             {
                 if (element != null) RegisterElement(element.gameObject);
@@ -89,7 +38,6 @@ namespace FactoryFrenzy.VR
             foreach (KeyValuePair<XRGrabInteractable, VR_EditableElement> pair in m_Tracked)
             {
                 if (pair.Key == null) continue;
-
                 pair.Key.selectEntered.RemoveListener(OnSelectEntered);
                 pair.Key.selectExited.RemoveListener(OnSelectExited);
             }
@@ -99,13 +47,6 @@ namespace FactoryFrenzy.VR
             IsGrabbing = false;
         }
 
-        // ---------------------------------------------------------------------
-        // Enregistrement des elements
-        // ---------------------------------------------------------------------
-
-        /// <summary>
-        /// Branche les evenements d'attrape / depot sur un element du niveau.
-        /// </summary>
         public void RegisterElement(GameObject elementObject)
         {
             if (elementObject == null) return;
@@ -118,13 +59,8 @@ namespace FactoryFrenzy.VR
 
             if (grab == null && autoAddGrabComponents)
             {
-                // Les prefabs de Prefabs_VR_Editor possedent deja ces composants,
-                // mais on securise le cas d'un prefab quelconque.
                 Rigidbody body = element.GetComponent<Rigidbody>();
-                if (body == null)
-                {
-                    body = element.gameObject.AddComponent<Rigidbody>();
-                }
+                if (body == null) body = element.gameObject.AddComponent<Rigidbody>();
 
                 body.isKinematic = true;
                 body.useGravity = !keepElementsFloating;
@@ -143,14 +79,18 @@ namespace FactoryFrenzy.VR
             grab.selectExited.AddListener(OnSelectExited);
         }
 
-        // ---------------------------------------------------------------------
-        // Evenements XR Interaction Toolkit
-        // ---------------------------------------------------------------------
-
         private void OnSelectEntered(SelectEnterEventArgs args)
         {
             VR_EditableElement element = GetElementFromArgs(args);
             if (element == null) return;
+
+            // VR-FP2-2 : Vérification du verrou
+            if (element.isLocked)
+            {
+                Debug.Log($"[VR-FP2-2] Attrape refusee : {element.name} est verrouille.");
+                VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+                return;
+            }
 
             CurrentElement = element;
             IsGrabbing = true;
@@ -198,26 +138,18 @@ namespace FactoryFrenzy.VR
             return args.interactableObject.transform.GetComponentInParent<VR_EditableElement>();
         }
 
-        // ---------------------------------------------------------------------
-        // Outils
-        // ---------------------------------------------------------------------
-
-        /// <summary>Aligne une position sur la grille de construction.</summary>
         public Vector3 SnapToGrid(Vector3 position)
         {
             if (gridSize <= 0f) return position;
-
             return new Vector3(
                 Mathf.Round(position.x / gridSize) * gridSize,
                 position.y,
                 Mathf.Round(position.z / gridSize) * gridSize);
         }
 
-        /// <summary>Desenregistre un element (appele par VRDeleteManager).</summary>
         public void UnregisterElement(GameObject elementObject)
         {
             if (elementObject == null) return;
-
             XRGrabInteractable grab = elementObject.GetComponent<XRGrabInteractable>();
             if (grab == null || !m_Tracked.ContainsKey(grab)) return;
 
@@ -226,21 +158,14 @@ namespace FactoryFrenzy.VR
             m_Tracked.Remove(grab);
         }
 
-        /// <summary>
-        /// Force le relâchement de l'élément actuellement tenu (appelé par VRDeleteManager avant suppression).
-        /// </summary>
         public void ForceReleaseCurrentElement()
         {
             if (CurrentElement != null)
             {
-                // On remet l'état visuel à "non sélectionné"
                 CurrentElement.SetSelected(false);
             }
-
             CurrentElement = null;
             IsGrabbing = false;
-
-            // On notifie les autres systèmes (comme le feedback) que l'état a changé
             OnGrabStateChanged?.Invoke(false);
         }
     }

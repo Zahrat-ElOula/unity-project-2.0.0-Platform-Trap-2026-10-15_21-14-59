@@ -3,15 +3,10 @@ using UnityEngine;
 
 namespace FactoryFrenzy.VR
 {
-    /// <summary>
-    /// Marqueur d'un élément éditable dans le niveau.
-    /// Contient toutes les données nécessaires à l'export JSON.
-    /// </summary>
     [DisallowMultipleComponent]
     public class VR_EditableElement : MonoBehaviour
     {
         [Header("Type d'élément (pour le JSON)")]
-        [Tooltip("Ex: Platform_Start, Platform_Classical, Trap_Bumper, etc.")]
         public string elementType;
 
         [Header("Paramètres pour la plateforme mobile")]
@@ -23,34 +18,16 @@ namespace FactoryFrenzy.VR
         public bool isLocked = false;
         public bool hasMovement = false;
 
-        // -----------------------------------------------------------------
-        // Alias pour compatibilité avec VRSceneBuilder (moveFrom / moveTo)
-        // -----------------------------------------------------------------
+        [Header("Visuel Verrouillage (VR-FP2-2)")]
+        [Tooltip("Couleur appliquée quand l'élément est verrouillé.")]
+        public Color lockedColor = new Color(0.5f, 0.5f, 0.5f, 1f); // Gris
+        [Tooltip("Couleur d'émission (effet néon) quand verrouillé.")]
+        public Color lockedEmission = new Color(0.1f, 0.1f, 0.1f, 1f);
 
-        /// <summary>Alias de startPosition (utilisé par VRSceneBuilder).</summary>
-        public Vector3 moveFrom
-        {
-            get => startPosition;
-            set => startPosition = value;
-        }
-
-        /// <summary>Alias de endPosition (utilisé par VRSceneBuilder).</summary>
-        public Vector3 moveTo
-        {
-            get => endPosition;
-            set => endPosition = value;
-        }
-
-        // -----------------------------------------------------------------
-        // Propriétés "monde" pour l'export JSON
-        // -----------------------------------------------------------------
-
+        public Vector3 moveFrom { get => startPosition; set => startPosition = value; }
+        public Vector3 moveTo { get => endPosition; set => endPosition = value; }
         public Vector3 WorldMoveStart => startPosition;
         public Vector3 WorldMoveEnd => endPosition;
-
-        // -----------------------------------------------------------------
-        // Cache global de tous les éléments éditables
-        // -----------------------------------------------------------------
 
         private static readonly List<VR_EditableElement> s_All = new List<VR_EditableElement>();
         [System.NonSerialized] private MaterialPropertyBlock m_PropertyBlock;
@@ -58,42 +35,19 @@ namespace FactoryFrenzy.VR
 
         public static IReadOnlyList<VR_EditableElement> All => s_All;
 
-        // -----------------------------------------------------------------
-        // Cycle de vie
-        // -----------------------------------------------------------------
-
-        private void OnEnable()
-        {
-            if (!s_All.Contains(this))
-                s_All.Add(this);
-        }
-
-        private void OnDisable()
-        {
-            s_All.Remove(this);
-        }
+        private void OnEnable() => s_All.Add(this);
+        private void OnDisable() => s_All.Remove(this);
 
         private void Start()
         {
-            if (string.IsNullOrEmpty(elementType))
-                ConfigureFromSourcePrefab(name);
-
+            if (string.IsNullOrEmpty(elementType)) ConfigureFromSourcePrefab(name);
             if (hasMovement)
             {
-                if (startPosition == Vector3.zero)
-                    startPosition = transform.position;
-
-                if (endPosition == Vector3.zero)
-                    endPosition = startPosition + transform.forward * 4f;
+                if (startPosition == Vector3.zero) startPosition = transform.position;
+                if (endPosition == Vector3.zero) endPosition = startPosition + transform.forward * 4f;
             }
         }
 
-        /// <summary>
-        /// Configure les donnees d'un element cree depuis les prefabs source du
-        /// projet (Assets/FactoryFrenzy/Prefabs/Platform and Trap). Les assets
-        /// d'origine restent ainsi utilisables par l'application PC du binome.
-        /// </summary>
-        /// <summary>Retourne le type stable exporte pour un prefab source.</summary>
         public static string GetTypeForSourcePrefab(string prefabName)
         {
             string key = (prefabName ?? string.Empty).Replace("(Clone)", string.Empty).Trim().ToLowerInvariant();
@@ -119,7 +73,6 @@ namespace FactoryFrenzy.VR
             elementType = GetTypeForSourcePrefab(prefabName);
             hasMovement = elementType == "Platform_Move";
             duration = 3f;
-
             if (hasMovement)
             {
                 startPosition = transform.position;
@@ -127,46 +80,82 @@ namespace FactoryFrenzy.VR
             }
         }
 
-        // -----------------------------------------------------------------
-        // Méthodes utilisées par les autres scripts
-        // -----------------------------------------------------------------
-
-        public string GetTypeName()
-        {
-            return string.IsNullOrEmpty(elementType) ? name : elementType;
-        }
+        public string GetTypeName() => string.IsNullOrEmpty(elementType) ? name : elementType;
 
         public void OnGrabbed() { }
         public void OnReleased() { }
 
-        /// <summary>Met en evidence l'element cible/selectionne sans instancier de materiau.</summary>
+        // -----------------------------------------------------------------
+        // NOUVEAU : Gestion du verrouillage (VR-FP2-2)
+        // -----------------------------------------------------------------
+        public void ToggleLock()
+        {
+            SetLocked(!isLocked);
+        }
+
+        public void SetLocked(bool locked)
+        {
+            if (isLocked == locked) return;
+            isLocked = locked;
+
+            // Feedback visuel via PropertyBlock
+            UpdateVisualState();
+
+            // Feedback sonore/haptique
+            if (isLocked)
+            {
+                VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+                Debug.Log($"[VR-FP2-2] Element verrouille : {name}");
+            }
+            else
+            {
+                VRLevelEvents.RaiseFeedback(VRFeedbackType.Select);
+                Debug.Log($"[VR-FP2-2] Element deverrouille : {name}");
+            }
+        }
+
         public void SetSelected(bool selected)
         {
             if (m_IsSelected == selected) return;
             m_IsSelected = selected;
+            UpdateVisualState();
+        }
+
+        private void UpdateVisualState()
+        {
             if (m_PropertyBlock == null) m_PropertyBlock = new MaterialPropertyBlock();
 
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
             {
                 if (renderer == null) continue;
                 renderer.GetPropertyBlock(m_PropertyBlock);
-                if (selected)
+
+                // Priorité 1 : Sélection (Jaune)
+                if (m_IsSelected)
                 {
                     Color color = new Color(1f, 0.66f, 0.08f, 1f);
-                    if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_BaseColor"))
-                        m_PropertyBlock.SetColor("_BaseColor", color);
-                    if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_Color"))
-                        m_PropertyBlock.SetColor("_Color", color);
-                    if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_EmissionColor"))
-                        m_PropertyBlock.SetColor("_EmissionColor", color * 0.35f);
+                    ApplyColorToBlock(m_PropertyBlock, renderer, color, color * 0.35f);
                 }
+                // Priorité 2 : Verrouillé (Gris + petite émission)
+                else if (isLocked)
+                {
+                    ApplyColorToBlock(m_PropertyBlock, renderer, lockedColor, lockedEmission);
+                }
+                // Priorité 3 : Normal
                 else
                 {
-                    // Les objets de l'editeur n'ont pas d'autre PropertyBlock runtime.
                     m_PropertyBlock.Clear();
                 }
                 renderer.SetPropertyBlock(m_PropertyBlock);
             }
+        }
+
+        private void ApplyColorToBlock(MaterialPropertyBlock block, Renderer renderer, Color baseColor, Color emissionColor)
+        {
+            if (renderer.sharedMaterial == null) return;
+            if (renderer.sharedMaterial.HasProperty("_BaseColor")) block.SetColor("_BaseColor", baseColor);
+            if (renderer.sharedMaterial.HasProperty("_Color")) block.SetColor("_Color", baseColor);
+            if (renderer.sharedMaterial.HasProperty("_EmissionColor")) block.SetColor("_EmissionColor", emissionColor);
         }
     }
 }

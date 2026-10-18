@@ -1,29 +1,3 @@
-// =============================================================================
-//  Factory Frenzy - Editeur de niveaux RV
-//  VRUIManager.cs                     ->  fonctionnalite VR-FP1-2
-//  ---------------------------------------------------------------------------
-//  "Selectionner et creer des elements dans une UI"
-//
-//  Ce gestionnaire construit au demarrage une palette RV (Canvas en World
-//  Space + TrackedDeviceGraphicRaycaster) placee devant l'utilisateur :
-//
-//      [ Platform_Classical ]   <- un bouton par prefab de la liste elementPrefabs
-//      [ Platform_Move      ]
-//      [ Trap_Fan           ]
-//      ...
-//      [ Creer ]  [ Supprimer ]  [ Exporter ]
-//
-//  - cliquer un bouton de type selectionne l'element a construire ;
-//  - "Creer" instancie le prefab selectionne devant l'utilisateur, dans le
-//    LevelRoot, puis previent les autres gestionnaires (VRLevelEvents) ;
-//  - "Supprimer" et "Exporter" declenchent les UnityEvent onDeleteRequested et
-//    onExportRequested : la scene les relie a VRDeleteManager (VR-FP1-4) et a
-//    VRLevelExporter (VR-FP1-5).
-//
-//  L'interface est generee par code afin de ne jamais casser quand la liste de
-//  prefabs change : ajouter un prefab dans elementPrefabs ajoute un bouton.
-// =============================================================================
-
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -33,90 +7,45 @@ using UnityEngine.XR.Interaction.Toolkit.UI;
 
 namespace FactoryFrenzy.VR
 {
-    /// <summary>
-    /// VR-FP1-2 : selection et creation d'elements via une interface RV.
-    /// </summary>
     [DisallowMultipleComponent]
     public class VRUIManager : MonoBehaviour
     {
-        // ---------------------------------------------------------------------
-        // Elements disponibles
-        // ---------------------------------------------------------------------
-
         [Header("Prefabs disponibles (Assets/FactoryFrenzy/Prefabs_VR_Editor)")]
-        [Tooltip("Chaque prefab de cette liste devient un bouton dans la palette RV.")]
         public List<GameObject> elementPrefabs = new List<GameObject>();
-
-        [Tooltip("Libelles personnalises (optionnel, meme ordre que elementPrefabs).")]
         public string[] elementLabels;
 
-        // ---------------------------------------------------------------------
-        // References de scene
-        // ---------------------------------------------------------------------
-
         [Header("References de scene")]
-        [Tooltip("Parent des elements crees (Level_Elements).")]
         public Transform levelRoot;
-
-        [Tooltip("Position de repli si la camera n'est pas trouvee.")]
         public Transform spawnPoint;
 
         [Header("Creation")]
-        [Tooltip("Creer l'element devant la tete de l'utilisateur.")]
         public bool spawnInFrontOfHead = true;
-
-        [Tooltip("Distance de creation devant la tete (metres).")]
         public float spawnDistance = 1.3f;
-
-        [Tooltip("Hauteur de creation minimale (metres).")]
         public float spawnHeight = 1f;
-
-        [Tooltip("Espace laisse au-dessus du decor/sol detecte.")]
         [Min(0.01f)] public float spawnSurfaceClearance = 0.08f;
-
-        [Tooltip("Noms de rendu consideres comme sol visuel.")]
         public string[] visualGroundKeywords = { "ground", "dirt", "terrain", "floor", "land" };
 
         [Header("Palette RV")]
-        [Tooltip("La palette suit la tete de l'utilisateur (recommande).")]
         public bool followHead = true;
-
         public float paletteDistance = 1.7f;
         public float paletteVerticalOffset = -0.08f;
-        [Tooltip("Decalage lateral par rapport au regard. Negatif = a gauche, pour garder la vue libre.")]
         public float paletteHorizontalOffset = -0.8f;
         public Vector2 paletteSize = new Vector2(560f, 760f);
         public float paletteScale = 0.0012f;
-
-        // ---------------------------------------------------------------------
-        // Evenements (relies dans la scene aux autres fonctionnalites)
-        // ---------------------------------------------------------------------
 
         [Header("Evenements de la palette")]
         public UnityEvent onDeleteRequested = new UnityEvent();
         public UnityEvent onExportRequested = new UnityEvent();
 
-        // ---------------------------------------------------------------------
-        // Etat
-        // ---------------------------------------------------------------------
-
-        /// <summary>Index du prefab actuellement selectionne dans la palette.</summary>
         public int SelectedIndex { get; private set; }
-
-        /// <summary>Prefab actuellement selectionne (peut etre null).</summary>
         public GameObject SelectedPrefab =>
             (elementPrefabs != null && SelectedIndex >= 0 && SelectedIndex < elementPrefabs.Count)
                 ? elementPrefabs[SelectedIndex]
                 : null;
 
-        /// <summary>Catégorie actuellement affichée pour réduire le temps de sélection.</summary>
         public ElementCategory ActiveCategory { get; private set; } = ElementCategory.Platforms;
 
-        public enum ElementCategory
-        {
-            Platforms,
-            Traps
-        }
+        public enum ElementCategory { Platforms, Traps }
 
         private sealed class ElementButton
         {
@@ -133,19 +62,17 @@ namespace FactoryFrenzy.VR
         private readonly List<ElementButton> m_ElementButtons = new List<ElementButton>();
         private readonly Dictionary<ElementCategory, Image> m_CategoryButtonBackgrounds = new Dictionary<ElementCategory, Image>();
         private Camera m_Camera;
+        private VRGrabManager m_GrabManager; // NOUVEAU
 
         private static readonly Color s_ButtonColor = new Color(0.16f, 0.18f, 0.22f, 0.95f);
         private static readonly Color s_SelectedColor = new Color(0.95f, 0.55f, 0.10f, 1f);
         private static readonly Color s_ActionColor = new Color(0.20f, 0.35f, 0.55f, 0.95f);
         private static readonly Color s_TextColor = new Color(0.95f, 0.95f, 0.95f, 1f);
 
-        // ---------------------------------------------------------------------
-        // Cycle de vie Unity
-        // ---------------------------------------------------------------------
-
         private void Start()
         {
             m_Camera = FindPlayerCamera();
+            m_GrabManager = FindObjectOfType<VRGrabManager>();
             BuildPalette();
             if (elementPrefabs != null && elementPrefabs.Count > 0)
                 SelectElement(FindFirstIndex(ActiveCategory));
@@ -154,10 +81,8 @@ namespace FactoryFrenzy.VR
         private void LateUpdate()
         {
             if (!followHead || m_CanvasTransform == null) return;
-
             if (m_Camera == null) m_Camera = FindPlayerCamera();
             if (m_Camera == null) return;
-
             PlacePaletteInFrontOfCamera();
         }
 
@@ -165,25 +90,18 @@ namespace FactoryFrenzy.VR
         {
             Camera main = Camera.main;
             if (main != null) return main;
-
             Camera[] cameras = FindObjectsOfType<Camera>();
             foreach (Camera camera in cameras)
                 if (camera.enabled && camera.gameObject.activeInHierarchy) return camera;
             return cameras.Length > 0 ? cameras[0] : null;
         }
 
-        // ---------------------------------------------------------------------
-        // Construction de la palette
-        // ---------------------------------------------------------------------
-
-        /// <summary>Construit le Canvas World Space et tous ses boutons.</summary>
         public void BuildPalette()
         {
             if (m_Canvas != null) return;
 
             GameObject canvasGo = new GameObject("VR_Palette");
             m_Canvas = canvasGo.AddComponent<Canvas>();
-            // Canvas remplace le Transform par un RectTransform : conserver la reference ensuite.
             m_CanvasTransform = canvasGo.transform;
             m_CanvasTransform.localScale = Vector3.one * paletteScale;
             m_Canvas.renderMode = RenderMode.WorldSpace;
@@ -192,10 +110,8 @@ namespace FactoryFrenzy.VR
             RectTransform canvasRect = canvasGo.GetComponent<RectTransform>();
             canvasRect.sizeDelta = paletteSize;
 
-            // Permet aux rayons XR (manettes) d'interagir avec l'interface.
             canvasGo.AddComponent<TrackedDeviceGraphicRaycaster>();
 
-            // Fond de la palette.
             Image background = canvasGo.AddComponent<Image>();
             background.color = new Color(0.05f, 0.06f, 0.08f, 0.85f);
             background.raycastTarget = false;
@@ -209,11 +125,8 @@ namespace FactoryFrenzy.VR
             layout.childForceExpandHeight = false;
             layout.childForceExpandWidth = true;
 
-            // Ligne d'etat en haut de la palette.
             m_StatusText = CreateText(canvasGo.transform, "Selection : -", 20f, 34f);
 
-            // Choix rapide par catégories : seules les plateformes OU les pièges
-            // sont affichés. La palette reste ainsi courte et lisible en RV.
             GameObject categories = new GameObject("Categories", typeof(RectTransform));
             categories.transform.SetParent(canvasGo.transform, false);
             HorizontalLayoutGroup categoryLayout = categories.AddComponent<HorizontalLayoutGroup>();
@@ -226,16 +139,13 @@ namespace FactoryFrenzy.VR
             AddCategoryButton(categories.transform, "PLATEFORMES", ElementCategory.Platforms, new Color(0.10f, 0.42f, 0.80f, 0.98f));
             AddCategoryButton(categories.transform, "PIEGES", ElementCategory.Traps, new Color(0.75f, 0.22f, 0.12f, 0.98f));
 
-            // Nom du fichier JSON : saisissable au clavier avec le simulateur
-            // ou avec le clavier virtuel du casque.
             m_LevelNameInput = CreateInputField(canvasGo.transform, "Nom du niveau", "DemoScene_Forest", 38f);
             m_LevelNameInput.onValueChanged.AddListener(SetExportFileName);
             SetExportFileName(m_LevelNameInput.text);
 
-            // Un bouton par prefab d'element.
             for (int i = 0; i < elementPrefabs.Count; i++)
             {
-                int index = i; // capture locale pour le lambda
+                int index = i;
                 GameObject prefab = elementPrefabs[i];
                 if (prefab == null) continue;
 
@@ -252,9 +162,12 @@ namespace FactoryFrenzy.VR
                 });
             }
 
-            // Boutons d'action.
             Button createButton = CreateButton(canvasGo.transform, "CREER L'ELEMENT", s_ActionColor, 46f);
             createButton.onClick.AddListener(CreateSelected);
+
+            // NOUVEAU : Bouton Verrouiller
+            Button lockButton = CreateButton(canvasGo.transform, "VERROUILLER L'ELEMENT", new Color(0.5f, 0.5f, 0.5f, 1f), 42f);
+            lockButton.onClick.AddListener(ToggleLockOnHeldOrTargeted);
 
             Button deleteButton = CreateButton(canvasGo.transform, "SUPPRIMER SELECTION", new Color(0.65f, 0.16f, 0.14f, 0.98f), 42f);
             deleteButton.onClick.AddListener(() => onDeleteRequested.Invoke());
@@ -262,9 +175,25 @@ namespace FactoryFrenzy.VR
             Button exportButton = CreateButton(canvasGo.transform, "EXPORTER JSON", new Color(0.30f, 0.28f, 0.65f, 0.98f), 42f);
             exportButton.onClick.AddListener(() => onExportRequested.Invoke());
 
-            CreateText(canvasGo.transform, "A : selection multiple | B : supprimer | X/F5 : exporter", 13f, 26f);
+            CreateText(canvasGo.transform, "A : selection multiple | B : supprimer | Y/L : verrouiller | X/F5 : exporter", 13f, 26f);
             SetCategory(ActiveCategory, false);
             PlacePaletteInFrontOfCamera();
+        }
+
+        // NOUVEAU : Logique du bouton Verrouiller
+        public void ToggleLockOnHeldOrTargeted()
+        {
+            if (m_GrabManager != null && m_GrabManager.CurrentElement != null)
+            {
+                m_GrabManager.CurrentElement.ToggleLock();
+                return;
+            }
+
+            VRDeleteManager deleteManager = FindObjectOfType<VRDeleteManager>();
+            if (deleteManager != null)
+            {
+                deleteManager.ToggleTargetedLock();
+            }
         }
 
         private void AddCategoryButton(Transform parent, string label, ElementCategory category, Color color)
@@ -274,10 +203,7 @@ namespace FactoryFrenzy.VR
             m_CategoryButtonBackgrounds[category] = button.targetGraphic as Image;
         }
 
-        public void SetCategory(ElementCategory category)
-        {
-            SetCategory(category, true);
-        }
+        public void SetCategory(ElementCategory category) => SetCategory(category, true);
 
         private void SetCategory(ElementCategory category, bool feedback)
         {
@@ -316,7 +242,6 @@ namespace FactoryFrenzy.VR
             return 0;
         }
 
-        /// <summary>Met a jour le nom utilise par l'export JSON.</summary>
         public void SetExportFileName(string fileName)
         {
             VRLevelExporter exporter = FindObjectOfType<VRLevelExporter>();
@@ -375,7 +300,6 @@ namespace FactoryFrenzy.VR
             Vector3 origin = m_Camera != null ? m_Camera.transform.position : Vector3.zero + Vector3.up * 1.6f;
             Vector3 forward = m_Camera != null ? m_Camera.transform.forward : Vector3.forward;
 
-            // On ignore l'inclinaison de la tete pour garder la palette verticale.
             Vector3 flatForward = new Vector3(forward.x, 0f, forward.z);
             if (flatForward.sqrMagnitude < 0.0001f) flatForward = Vector3.forward;
             flatForward.Normalize();
@@ -387,7 +311,6 @@ namespace FactoryFrenzy.VR
             m_CanvasTransform.position = origin + flatForward * paletteDistance +
                                          right * paletteHorizontalOffset + Vector3.up * paletteVerticalOffset;
 
-            // Le Canvas (axe +Z) est tourne vers la camera pour rester lisible.
             Vector3 lookDirection = origin - m_CanvasTransform.position;
             lookDirection.y = 0f;
             if (lookDirection.sqrMagnitude > 0.0001f)
@@ -396,11 +319,6 @@ namespace FactoryFrenzy.VR
             }
         }
 
-        // ---------------------------------------------------------------------
-        // Selection / creation
-        // ---------------------------------------------------------------------
-
-        /// <summary>Selectionne un prefab par son index dans elementPrefabs.</summary>
         public void SelectElement(int index)
         {
             if (elementPrefabs == null || elementPrefabs.Count == 0)
@@ -417,7 +335,6 @@ namespace FactoryFrenzy.VR
             UpdatePaletteState();
         }
 
-        /// <summary>Selectionne un prefab par son type logique (elementType).</summary>
         public void SelectElementByType(string elementType)
         {
             if (string.IsNullOrEmpty(elementType) || elementPrefabs == null) return;
@@ -442,25 +359,20 @@ namespace FactoryFrenzy.VR
             Debug.LogWarning($"[VR-FP1-2] Aucun prefab de type '{elementType}' dans la palette.");
         }
 
-        /// <summary>Selectionne le type suivant (bouton / action de manette).</summary>
         public void SelectNext()
         {
             if (elementPrefabs == null || elementPrefabs.Count == 0) return;
             SelectElement((SelectedIndex + 1) % elementPrefabs.Count);
         }
 
-        /// <summary>Selectionne le type precedent.</summary>
         public void SelectPrevious()
         {
             if (elementPrefabs == null || elementPrefabs.Count == 0) return;
             SelectElement((SelectedIndex - 1 + elementPrefabs.Count) % elementPrefabs.Count);
         }
 
-        /// <summary>
-        /// Cree le prefab selectionne devant l'utilisateur et le place sous le
-        /// LevelRoot. Renvoie l'objet cree (ou null).
-        /// </summary>
-        public GameObject SpawnSelected()        {
+        public GameObject SpawnSelected()
+        {
             GameObject prefab = SelectedPrefab;
 
             if (prefab == null)
@@ -497,15 +409,11 @@ namespace FactoryFrenzy.VR
             GameObject created = Instantiate(prefab, position, rotation, levelRoot);
             created.name = prefab.name;
 
-            // Le prefab source est commun a l'editeur RV et au jeu PC. Les
-            // composants propres a l'edition sont ajoutes uniquement a
-            // l'instance creee, jamais a l'asset du binome.
             VR_EditableElement editable = created.GetComponent<VR_EditableElement>();
             if (editable == null)
                 editable = created.AddComponent<VR_EditableElement>();
             editable.ConfigureFromSourcePrefab(prefab.name);
 
-            // Prevenir les autres fonctionnalites (VRGrabManager, ...).
             VRLevelEvents.RaiseElementSpawned(created);
             VRLevelEvents.RaiseFeedback(VRFeedbackType.Place);
 
@@ -515,15 +423,8 @@ namespace FactoryFrenzy.VR
             return created;
         }
 
-        /// <summary>
-        /// Version void de SpawnSelected() : utilisable dans un bouton / UnityEvent.
-        /// </summary>
-        public void CreateSelected()
-        {
-            SpawnSelected();
-        }
+        public void CreateSelected() => SpawnSelected();
 
-        /// <summary>Supprime tous les elements crees (remise a zero du niveau).</summary>
         public void ClearLevel()
         {
             if (levelRoot == null) return;
@@ -536,7 +437,6 @@ namespace FactoryFrenzy.VR
             UpdatePaletteState();
         }
 
-        /// <summary>Hauteur de creation au-dessus du sol physique et du decor forestier visible.</summary>
         public float GetSafeSpawnHeight(Vector3 worldPosition)
         {
             float height = spawnHeight;
@@ -564,10 +464,6 @@ namespace FactoryFrenzy.VR
             return false;
         }
 
-        // ---------------------------------------------------------------------
-        // Mise a jour visuelle de la palette
-        // ---------------------------------------------------------------------
-
         private void UpdatePaletteState()
         {
             if (m_StatusText != null)
@@ -583,10 +479,6 @@ namespace FactoryFrenzy.VR
                 entry.background.color = (entry.index == SelectedIndex) ? s_SelectedColor : s_ButtonColor;
             }
         }
-
-        // ---------------------------------------------------------------------
-        // Fabrique de widgets uGUI / TextMeshPro
-        // ---------------------------------------------------------------------
 
         private static Button CreateButton(Transform parent, string label, Color color, float height)
         {
