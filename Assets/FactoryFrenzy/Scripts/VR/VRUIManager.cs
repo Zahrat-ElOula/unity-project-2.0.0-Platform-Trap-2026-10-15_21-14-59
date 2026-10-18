@@ -62,7 +62,7 @@ namespace FactoryFrenzy.VR
         private readonly List<ElementButton> m_ElementButtons = new List<ElementButton>();
         private readonly Dictionary<ElementCategory, Image> m_CategoryButtonBackgrounds = new Dictionary<ElementCategory, Image>();
         private Camera m_Camera;
-        private VRGrabManager m_GrabManager; // NOUVEAU
+        private VRGrabManager m_GrabManager;
 
         private static readonly Color s_ButtonColor = new Color(0.16f, 0.18f, 0.22f, 0.95f);
         private static readonly Color s_SelectedColor = new Color(0.95f, 0.55f, 0.10f, 1f);
@@ -165,9 +165,16 @@ namespace FactoryFrenzy.VR
             Button createButton = CreateButton(canvasGo.transform, "CREER L'ELEMENT", s_ActionColor, 46f);
             createButton.onClick.AddListener(CreateSelected);
 
-            // NOUVEAU : Bouton Verrouiller
+            // VR-FP2-2 : Bouton Verrouiller
             Button lockButton = CreateButton(canvasGo.transform, "VERROUILLER L'ELEMENT", new Color(0.5f, 0.5f, 0.5f, 1f), 42f);
             lockButton.onClick.AddListener(ToggleLockOnHeldOrTargeted);
+
+            // VR-FP2-3 : Boutons de durée
+            Button timePlusButton = CreateButton(canvasGo.transform, "Temps Plateforme +1s", new Color(0.2f, 0.6f, 0.2f, 0.98f), 38f);
+            timePlusButton.onClick.AddListener(() => ModifyDuration(1f));
+
+            Button timeMinusButton = CreateButton(canvasGo.transform, "Temps Plateforme -1s", new Color(0.6f, 0.2f, 0.2f, 0.98f), 38f);
+            timeMinusButton.onClick.AddListener(() => ModifyDuration(-1f));
 
             Button deleteButton = CreateButton(canvasGo.transform, "SUPPRIMER SELECTION", new Color(0.65f, 0.16f, 0.14f, 0.98f), 42f);
             deleteButton.onClick.AddListener(() => onDeleteRequested.Invoke());
@@ -175,12 +182,11 @@ namespace FactoryFrenzy.VR
             Button exportButton = CreateButton(canvasGo.transform, "EXPORTER JSON", new Color(0.30f, 0.28f, 0.65f, 0.98f), 42f);
             exportButton.onClick.AddListener(() => onExportRequested.Invoke());
 
-            CreateText(canvasGo.transform, "A : selection multiple | B : supprimer | Y/L : verrouiller | X/F5 : exporter", 13f, 26f);
+            CreateText(canvasGo.transform, "A/1 : depart | B/2 : arrivee | Y/L : verrouiller | X/F5 : exporter", 13f, 26f);
             SetCategory(ActiveCategory, false);
             PlacePaletteInFrontOfCamera();
         }
 
-        // NOUVEAU : Logique du bouton Verrouiller
         public void ToggleLockOnHeldOrTargeted()
         {
             if (m_GrabManager != null && m_GrabManager.CurrentElement != null)
@@ -190,9 +196,32 @@ namespace FactoryFrenzy.VR
             }
 
             VRDeleteManager deleteManager = FindObjectOfType<VRDeleteManager>();
+            if (deleteManager != null) deleteManager.ToggleTargetedLock();
+        }
+
+        private void ModifyDuration(float amount)
+        {
+            if (m_GrabManager != null && m_GrabManager.CurrentElement != null)
+            {
+                if (m_GrabManager.CurrentElement.GetTypeName() == "Platform_Move")
+                {
+                    m_GrabManager.CurrentElement.AddDuration(amount);
+                    return;
+                }
+            }
+
+            VRDeleteManager deleteManager = FindObjectOfType<VRDeleteManager>();
             if (deleteManager != null)
             {
-                deleteManager.ToggleTargetedLock();
+                VR_EditableElement targeted = deleteManager.GetTargetedElement();
+                if (targeted != null && targeted.GetTypeName() == "Platform_Move")
+                {
+                    targeted.AddDuration(amount);
+                }
+                else
+                {
+                    Debug.LogWarning("[VR-FP2-3] Veuillez pointer ou tenir une plateforme mobile pour changer son temps.");
+                }
             }
         }
 

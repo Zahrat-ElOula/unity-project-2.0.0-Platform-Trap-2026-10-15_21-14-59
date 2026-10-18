@@ -19,9 +19,7 @@ namespace FactoryFrenzy.VR
         public bool hasMovement = false;
 
         [Header("Visuel Verrouillage (VR-FP2-2)")]
-        [Tooltip("Couleur appliquée quand l'élément est verrouillé.")]
-        public Color lockedColor = new Color(0.5f, 0.5f, 0.5f, 1f); // Gris
-        [Tooltip("Couleur d'émission (effet néon) quand verrouillé.")]
+        public Color lockedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
         public Color lockedEmission = new Color(0.1f, 0.1f, 0.1f, 1f);
 
         public Vector3 moveFrom { get => startPosition; set => startPosition = value; }
@@ -35,12 +33,21 @@ namespace FactoryFrenzy.VR
 
         public static IReadOnlyList<VR_EditableElement> All => s_All;
 
-        private void OnEnable() => s_All.Add(this);
-        private void OnDisable() => s_All.Remove(this);
+        private void OnEnable()
+        {
+            if (!s_All.Contains(this)) s_All.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            s_All.Remove(this);
+        }
 
         private void Start()
         {
-            if (string.IsNullOrEmpty(elementType)) ConfigureFromSourcePrefab(name);
+            if (string.IsNullOrEmpty(elementType))
+                ConfigureFromSourcePrefab(name);
+
             if (hasMovement)
             {
                 if (startPosition == Vector3.zero) startPosition = transform.position;
@@ -73,6 +80,7 @@ namespace FactoryFrenzy.VR
             elementType = GetTypeForSourcePrefab(prefabName);
             hasMovement = elementType == "Platform_Move";
             duration = 3f;
+
             if (hasMovement)
             {
                 startPosition = transform.position;
@@ -80,28 +88,23 @@ namespace FactoryFrenzy.VR
             }
         }
 
-        public string GetTypeName() => string.IsNullOrEmpty(elementType) ? name : elementType;
+        public string GetTypeName()
+        {
+            return string.IsNullOrEmpty(elementType) ? name : elementType;
+        }
 
         public void OnGrabbed() { }
         public void OnReleased() { }
 
-        // -----------------------------------------------------------------
-        // NOUVEAU : Gestion du verrouillage (VR-FP2-2)
-        // -----------------------------------------------------------------
-        public void ToggleLock()
-        {
-            SetLocked(!isLocked);
-        }
+        // VR-FP2-2 : Gestion du verrouillage
+        public void ToggleLock() => SetLocked(!isLocked);
 
         public void SetLocked(bool locked)
         {
             if (isLocked == locked) return;
             isLocked = locked;
-
-            // Feedback visuel via PropertyBlock
             UpdateVisualState();
 
-            // Feedback sonore/haptique
             if (isLocked)
             {
                 VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
@@ -130,18 +133,15 @@ namespace FactoryFrenzy.VR
                 if (renderer == null) continue;
                 renderer.GetPropertyBlock(m_PropertyBlock);
 
-                // Priorité 1 : Sélection (Jaune)
                 if (m_IsSelected)
                 {
                     Color color = new Color(1f, 0.66f, 0.08f, 1f);
                     ApplyColorToBlock(m_PropertyBlock, renderer, color, color * 0.35f);
                 }
-                // Priorité 2 : Verrouillé (Gris + petite émission)
                 else if (isLocked)
                 {
                     ApplyColorToBlock(m_PropertyBlock, renderer, lockedColor, lockedEmission);
                 }
-                // Priorité 3 : Normal
                 else
                 {
                     m_PropertyBlock.Clear();
@@ -156,6 +156,14 @@ namespace FactoryFrenzy.VR
             if (renderer.sharedMaterial.HasProperty("_BaseColor")) block.SetColor("_BaseColor", baseColor);
             if (renderer.sharedMaterial.HasProperty("_Color")) block.SetColor("_Color", baseColor);
             if (renderer.sharedMaterial.HasProperty("_EmissionColor")) block.SetColor("_EmissionColor", emissionColor);
+        }
+
+        // VR-FP2-3 : Modification de la durée
+        public void AddDuration(float seconds)
+        {
+            duration = Mathf.Max(0.1f, duration + seconds);
+            Debug.Log($"[VR-FP2-3] Nouvelle duree pour {name} : {duration:F1}s");
+            VRLevelEvents.RaiseFeedback(VRFeedbackType.Select);
         }
     }
 }

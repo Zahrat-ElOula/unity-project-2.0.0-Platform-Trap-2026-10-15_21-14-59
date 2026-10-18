@@ -17,8 +17,14 @@ namespace FactoryFrenzy.VR
         public InputActionProperty selectionAction;
 
         [Header("Entree - Verrouillage (VR-FP2-2)")]
-        [Tooltip("Action pour verrouiller/deverrouiller l'element pointe (Bouton Y / Touche L).")]
         public InputActionProperty lockAction;
+
+        [Header("Entree - Configuration Plateforme (VR-FP2-3)")]
+        [Tooltip("Action pour definir le point de depart (Bouton A / Touche 1).")]
+        public InputActionProperty setStartAction;
+
+        [Tooltip("Action pour definir le point d'arrivee (Bouton B / Touche 2).")]
+        public InputActionProperty setEndAction;
 
         [Header("Options")]
         public bool preventDeleteWhileGrabbing = true;
@@ -31,7 +37,10 @@ namespace FactoryFrenzy.VR
 
         private InputAction m_BuiltInAction;
         private InputAction m_BuiltInSelectionAction;
-        private InputAction m_BuiltInLockAction; // NOUVEAU
+        private InputAction m_BuiltInLockAction;
+        private InputAction m_BuiltInSetStartAction;
+        private InputAction m_BuiltInSetEndAction;
+
         private readonly System.Collections.Generic.List<VR_EditableElement> m_SelectedElements =
             new System.Collections.Generic.List<VR_EditableElement>();
 
@@ -48,36 +57,21 @@ namespace FactoryFrenzy.VR
 
         private void OnDisable()
         {
-            if (m_BuiltInAction != null)
-            {
-                m_BuiltInAction.performed -= OnDeletePerformed;
-                m_BuiltInAction.Disable();
-                m_BuiltInAction.Dispose();
-                m_BuiltInAction = null;
-            }
-
+            if (m_BuiltInAction != null) { m_BuiltInAction.performed -= OnDeletePerformed; m_BuiltInAction.Disable(); m_BuiltInAction.Dispose(); m_BuiltInAction = null; }
             if (deleteAction.action != null) deleteAction.action.performed -= OnDeletePerformed;
 
-            if (m_BuiltInSelectionAction != null)
-            {
-                m_BuiltInSelectionAction.performed -= OnSelectionPerformed;
-                m_BuiltInSelectionAction.Disable();
-                m_BuiltInSelectionAction.Dispose();
-                m_BuiltInSelectionAction = null;
-            }
-
+            if (m_BuiltInSelectionAction != null) { m_BuiltInSelectionAction.performed -= OnSelectionPerformed; m_BuiltInSelectionAction.Disable(); m_BuiltInSelectionAction.Dispose(); m_BuiltInSelectionAction = null; }
             if (selectionAction.action != null) selectionAction.action.performed -= OnSelectionPerformed;
 
-            // Nettoyage de l'action de verrouillage
-            if (m_BuiltInLockAction != null)
-            {
-                m_BuiltInLockAction.performed -= OnLockPerformed;
-                m_BuiltInLockAction.Disable();
-                m_BuiltInLockAction.Dispose();
-                m_BuiltInLockAction = null;
-            }
-
+            if (m_BuiltInLockAction != null) { m_BuiltInLockAction.performed -= OnLockPerformed; m_BuiltInLockAction.Disable(); m_BuiltInLockAction.Dispose(); m_BuiltInLockAction = null; }
             if (lockAction.action != null) lockAction.action.performed -= OnLockPerformed;
+
+            // Nettoyage VR-FP2-3
+            if (m_BuiltInSetStartAction != null) { m_BuiltInSetStartAction.performed -= OnSetStartPerformed; m_BuiltInSetStartAction.Disable(); m_BuiltInSetStartAction.Dispose(); m_BuiltInSetStartAction = null; }
+            if (setStartAction.action != null) setStartAction.action.performed -= OnSetStartPerformed;
+
+            if (m_BuiltInSetEndAction != null) { m_BuiltInSetEndAction.performed -= OnSetEndPerformed; m_BuiltInSetEndAction.Disable(); m_BuiltInSetEndAction.Dispose(); m_BuiltInSetEndAction = null; }
+            if (setEndAction.action != null) setEndAction.action.performed -= OnSetEndPerformed;
 
             ClearSelection();
         }
@@ -85,15 +79,11 @@ namespace FactoryFrenzy.VR
         private void SetupInput()
         {
             // --- SUPPRESSION ---
-            if (deleteAction.action != null)
-            {
-                deleteAction.action.Enable();
-                deleteAction.action.performed += OnDeletePerformed;
-            }
+            if (deleteAction.action != null) { deleteAction.action.Enable(); deleteAction.action.performed += OnDeletePerformed; }
             else if (createDefaultInputAction)
             {
                 m_BuiltInAction = new InputAction("VR_Delete", InputActionType.Button);
-                m_BuiltInAction.AddBinding("<XRController>{RightHand}/secondaryButton"); // B
+                m_BuiltInAction.AddBinding("<XRController>{RightHand}/secondaryButton");
                 m_BuiltInAction.AddBinding("<Keyboard>/delete");
                 m_BuiltInAction.AddBinding("<Keyboard>/backspace");
                 m_BuiltInAction.performed += OnDeletePerformed;
@@ -103,15 +93,11 @@ namespace FactoryFrenzy.VR
             // --- SELECTION MULTIPLE ---
             if (enableMultiSelection)
             {
-                if (selectionAction.action != null)
-                {
-                    selectionAction.action.Enable();
-                    selectionAction.action.performed += OnSelectionPerformed;
-                }
+                if (selectionAction.action != null) { selectionAction.action.Enable(); selectionAction.action.performed += OnSelectionPerformed; }
                 else
                 {
                     m_BuiltInSelectionAction = new InputAction("VR_ToggleSelection", InputActionType.Button);
-                    m_BuiltInSelectionAction.AddBinding("<XRController>{RightHand}/primaryButton"); // A
+                    m_BuiltInSelectionAction.AddBinding("<XRController>{RightHand}/primaryButton");
                     m_BuiltInSelectionAction.AddBinding("<Keyboard>/tab");
                     m_BuiltInSelectionAction.performed += OnSelectionPerformed;
                     m_BuiltInSelectionAction.Enable();
@@ -119,37 +105,92 @@ namespace FactoryFrenzy.VR
             }
 
             // --- VERROUILLAGE (VR-FP2-2) ---
-            if (lockAction.action != null)
-            {
-                lockAction.action.Enable();
-                lockAction.action.performed += OnLockPerformed;
-            }
+            if (lockAction.action != null) { lockAction.action.Enable(); lockAction.action.performed += OnLockPerformed; }
             else
             {
                 m_BuiltInLockAction = new InputAction("VR_Lock", InputActionType.Button);
-                m_BuiltInLockAction.AddBinding("<XRController>{RightHand}/primaryButton"); // Bouton Y
+                m_BuiltInLockAction.AddBinding("<XRController>{RightHand}/primaryButton");
                 m_BuiltInLockAction.AddBinding("<Keyboard>/l");
                 m_BuiltInLockAction.performed += OnLockPerformed;
                 m_BuiltInLockAction.Enable();
+            }
+
+            // --- CONFIGURATION PLATEFORME (VR-FP2-3) ---
+            if (setStartAction.action != null) { setStartAction.action.Enable(); setStartAction.action.performed += OnSetStartPerformed; }
+            else
+            {
+                m_BuiltInSetStartAction = new InputAction("VR_SetStart", InputActionType.Button);
+                m_BuiltInSetStartAction.AddBinding("<XRController>{RightHand}/primaryButton");
+                m_BuiltInSetStartAction.AddBinding("<Keyboard>/1");
+                m_BuiltInSetStartAction.performed += OnSetStartPerformed;
+                m_BuiltInSetStartAction.Enable();
+            }
+
+            if (setEndAction.action != null) { setEndAction.action.Enable(); setEndAction.action.performed += OnSetEndPerformed; }
+            else
+            {
+                m_BuiltInSetEndAction = new InputAction("VR_SetEnd", InputActionType.Button);
+                m_BuiltInSetEndAction.AddBinding("<XRController>{RightHand}/secondaryButton");
+                m_BuiltInSetEndAction.AddBinding("<Keyboard>/2");
+                m_BuiltInSetEndAction.performed += OnSetEndPerformed;
+                m_BuiltInSetEndAction.Enable();
             }
         }
 
         private void OnDeletePerformed(InputAction.CallbackContext context) => TryDelete();
         private void OnSelectionPerformed(InputAction.CallbackContext context) => ToggleTargetedSelection();
         private void OnLockPerformed(InputAction.CallbackContext context) => ToggleTargetedLock();
+        private void OnSetStartPerformed(InputAction.CallbackContext context) => SetTargetedStartPosition();
+        private void OnSetEndPerformed(InputAction.CallbackContext context) => SetTargetedEndPosition();
 
         public void ToggleTargetedLock()
         {
             VR_EditableElement element = GetTargetedElement();
-            if (element != null)
-            {
-                element.ToggleLock();
-            }
+            if (element != null) element.ToggleLock();
             else
             {
                 Debug.Log("[VR-FP2-2] Aucun element pointe pour changer son verrouillage.");
                 VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
             }
+        }
+
+        public void SetTargetedStartPosition()
+        {
+            VR_EditableElement element = GetTargetedElement();
+            if (element != null && element.GetTypeName() == "Platform_Move")
+            {
+                element.startPosition = GetRaycastPosition();
+                Debug.Log($"[VR-FP2-3] Point de depart defini pour {element.name} en {element.startPosition}");
+                VRLevelEvents.RaiseFeedback(VRFeedbackType.Place);
+            }
+            else if (element != null)
+            {
+                Debug.LogWarning("[VR-FP2-3] Cet element n'est pas une plateforme mobile.");
+                VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+            }
+        }
+
+        public void SetTargetedEndPosition()
+        {
+            VR_EditableElement element = GetTargetedElement();
+            if (element != null && element.GetTypeName() == "Platform_Move")
+            {
+                element.endPosition = GetRaycastPosition();
+                Debug.Log($"[VR-FP2-3] Point d'arrivee defini pour {element.name} en {element.endPosition}");
+                VRLevelEvents.RaiseFeedback(VRFeedbackType.Place);
+            }
+            else if (element != null)
+            {
+                Debug.LogWarning("[VR-FP2-3] Cet element n'est pas une plateforme mobile.");
+                VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+            }
+        }
+
+        private Vector3 GetRaycastPosition()
+        {
+            if (rayInteractor != null && rayInteractor.TryGetCurrent3DRaycastHit(out RaycastHit hit))
+                return hit.point;
+            return Vector3.zero;
         }
 
         public bool TryDelete()
