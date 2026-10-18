@@ -1,0 +1,346 @@
+{
+    "levelName": "Locus_Verification",
+    "elements": [
+        {
+            "type": "Platform_Checkpoint",
+            "position": {
+                "x": 0.0,
+                "y": 2.7184269428253176,
+                "z": 7.800000190734863
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Platform_Classical",
+            "position": {
+                "x": 0.0,
+                "y": 2.7184269428253176,
+                "z": 3.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Platform_Classical",
+            "position": {
+                "x": 0.0,
+                "y": 2.7184269428253176,
+                "z": 4.800000190734863
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Platform_Classical",
+            "position": {
+                "x": 0.0,
+                "y": 2.7184269428253176,
+                "z": 2.4000000953674318
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Platform_End",
+            "position": {
+                "x": 0.0,
+                "y": 2.7184269428253176,
+                "z": 9.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Platform_Move",
+            "position": {
+                "x": 0.0,
+                "y": 2.7184269428253176,
+                "z": 6.199999809265137
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.019999999552965165,
+                    "z": 6.199999809265137
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.019999999552965165,
+                    "z": 10.199999809265137
+                },
+                "duration": 3.0
+            }
+        },
+        {
+            "type": "Platform_Start",
+            "position": {
+                "x": 0.0,
+                "y": 2.7184269428253176,
+                "z": 1.5
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Trap_Bumper",
+            "position": {
+                "x": 1.0,
+                "y": 2.7184269428253176,
+                "z": 4.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Trap_Fan",
+            "position": {
+                "x": -1.0,
+                "y": 2.7184269428253176,
+                "z": 6.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Trap_Shooter",
+            "position": {
+                "x": 1.0,
+                "y": 2.7184269428253176,
+                "z": 6.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        },
+        {
+            "type": "Trap_Trampoline",
+            "position": {
+                "x": -1.0,
+                "y": 2.7184269428253176,
+                "z": 4.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "moveParams": {
+                "startPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "endPosition": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
+                },
+                "duration": 0.0
+            }
+        }
+    ]
+}

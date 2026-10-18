@@ -86,6 +86,15 @@ namespace FactoryFrenzy.VR
         [Header("Options")]
         public bool logExport = true;
 
+        [Tooltip("Verifier types, transforms et hauteur avant ecriture du JSON.")]
+        public bool validateElementsBeforeExport = true;
+
+        [Tooltip("Hauteur minimale acceptable pour un element exporte.")]
+        public float minimumElementHeight = -1f;
+
+        /// <summary>Resume de la derniere validation affiche dans les logs/UI.</summary>
+        public string LastValidationMessage { get; private set; }
+
         /// <summary>Chemin du dernier fichier exporte.</summary>
         public string LastExportPath { get; private set; }
 
@@ -202,6 +211,15 @@ namespace FactoryFrenzy.VR
             try
             {
                 string name = ResolveLevelName();
+                List<VR_EditableElement> elements = CollectElements();
+                if (validateElementsBeforeExport && !ValidateElements(elements, out string validationMessage))
+                {
+                    LastValidationMessage = validationMessage;
+                    Debug.LogError("[VR-FP1-5] Export annule : " + validationMessage);
+                    VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+                    return;
+                }
+                LastValidationMessage = $"Validation OK : {elements.Count} element(s).";
                 string mainPath = Path.Combine(Application.persistentDataPath, name + ".json");
                 string projectPath = exportToProjectFolder
                     ? Path.Combine(GetProjectRoot(), "LevelExports", name + ".json")
@@ -218,7 +236,7 @@ namespace FactoryFrenzy.VR
                     return;
                 }
 
-                string json = BuildJson(name);
+                string json = BuildJson(name, elements);
                 WriteFile(mainPath, json);
                 if (projectPath != null) WriteFile(projectPath, json);
 
@@ -230,7 +248,7 @@ namespace FactoryFrenzy.VR
                 VRLevelEvents.RaiseLevelExported(mainPath);
 
                 if (logExport)
-                    Debug.Log($"[VR-FP1-5] Niveau exporte : {VR_EditableElement.All.Count} elements -> {mainPath}" +
+                    Debug.Log($"[VR-FP1-5] {LastValidationMessage} Niveau exporte : {elements.Count} elements -> {mainPath}" +
                               (projectPath != null ? $"\n[VR-FP1-5] Copie projet : {projectPath}" : string.Empty));
             }
             catch (Exception exception)
@@ -275,8 +293,13 @@ namespace FactoryFrenzy.VR
         /// <summary>Construit le JSON avec JsonUtility et des modeles serialisables.</summary>
         public string BuildJson(string levelNameValue)
         {
+            return BuildJson(levelNameValue, CollectElements());
+        }
+
+        private string BuildJson(string levelNameValue, List<VR_EditableElement> elements)
+        {
             LevelData data = new LevelData { levelName = levelNameValue };
-            foreach (VR_EditableElement element in CollectElements())
+            foreach (VR_EditableElement element in elements)
             {
                 Transform transform = element.transform;
                 ElementData item = new ElementData
@@ -297,6 +320,46 @@ namespace FactoryFrenzy.VR
                 data.elements.Add(item);
             }
             return JsonUtility.ToJson(data, true);
+        }
+
+        /// <summary>Verifie les donnees avant ecriture : aucun element invalide n'est exporte par erreur.</summary>
+        private bool ValidateElements(List<VR_EditableElement> elements, out string message)
+        {
+            for (int i = 0; i < elements.Count; i++)
+            {
+                VR_EditableElement element = elements[i];
+                if (element == null) continue;
+                Transform transform = element.transform;
+                if (string.IsNullOrWhiteSpace(element.GetTypeName()))
+                {
+                    message = $"L'element {i + 1} n'a pas de type.";
+                    return false;
+                }
+                if (!IsFinite(transform.position) || !IsFinite(transform.eulerAngles) || !IsFinite(transform.localScale))
+                {
+                    message = $"'{element.name}' contient une position, rotation ou echelle invalide.";
+                    return false;
+                }
+                if (transform.localScale.x <= 0f || transform.localScale.y <= 0f || transform.localScale.z <= 0f)
+                {
+                    message = $"'{element.name}' a une echelle nulle ou negative.";
+                    return false;
+                }
+                if (transform.position.y < minimumElementHeight)
+                {
+                    message = $"'{element.name}' est sous la hauteur minimale ({minimumElementHeight:0.##} m).";
+                    return false;
+                }
+            }
+
+            message = $"Validation OK : {elements.Count} element(s).";
+            return true;
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) && !float.IsNaN(value.y) && !float.IsNaN(value.z) &&
+                   !float.IsInfinity(value.x) && !float.IsInfinity(value.y) && !float.IsInfinity(value.z);
         }
 
         /// <summary>Liste triee des elements, pour un export stable et comparable.</summary>

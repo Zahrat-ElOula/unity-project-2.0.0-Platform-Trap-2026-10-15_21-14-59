@@ -68,16 +68,24 @@ namespace FactoryFrenzy.VR
         [Tooltip("Distance de creation devant la tete (metres).")]
         public float spawnDistance = 1.3f;
 
-        [Tooltip("Hauteur de creation (metres).")]
+        [Tooltip("Hauteur de creation minimale (metres).")]
         public float spawnHeight = 1f;
+
+        [Tooltip("Espace laisse au-dessus du decor/sol detecte.")]
+        [Min(0.01f)] public float spawnSurfaceClearance = 0.08f;
+
+        [Tooltip("Noms de rendu consideres comme sol visuel.")]
+        public string[] visualGroundKeywords = { "ground", "dirt", "terrain", "floor", "land" };
 
         [Header("Palette RV")]
         [Tooltip("La palette suit la tete de l'utilisateur (recommande).")]
         public bool followHead = true;
 
         public float paletteDistance = 1.7f;
-        public float paletteVerticalOffset = -0.15f;
-        public Vector2 paletteSize = new Vector2(520f, 700f);
+        public float paletteVerticalOffset = -0.08f;
+        [Tooltip("Decalage lateral par rapport au regard. Negatif = a gauche, pour garder la vue libre.")]
+        public float paletteHorizontalOffset = -0.8f;
+        public Vector2 paletteSize = new Vector2(560f, 760f);
         public float paletteScale = 0.0012f;
 
         // ---------------------------------------------------------------------
@@ -101,11 +109,29 @@ namespace FactoryFrenzy.VR
                 ? elementPrefabs[SelectedIndex]
                 : null;
 
+        /// <summary>Catégorie actuellement affichée pour réduire le temps de sélection.</summary>
+        public ElementCategory ActiveCategory { get; private set; } = ElementCategory.Platforms;
+
+        public enum ElementCategory
+        {
+            Platforms,
+            Traps
+        }
+
+        private sealed class ElementButton
+        {
+            public int index;
+            public ElementCategory category;
+            public GameObject gameObject;
+            public Image background;
+        }
+
         private Canvas m_Canvas;
         private Transform m_CanvasTransform;
         private TMP_Text m_StatusText;
         private TMP_InputField m_LevelNameInput;
-        private readonly List<Image> m_TypeButtonBackgrounds = new List<Image>();
+        private readonly List<ElementButton> m_ElementButtons = new List<ElementButton>();
+        private readonly Dictionary<ElementCategory, Image> m_CategoryButtonBackgrounds = new Dictionary<ElementCategory, Image>();
         private Camera m_Camera;
 
         private static readonly Color s_ButtonColor = new Color(0.16f, 0.18f, 0.22f, 0.95f);
@@ -119,19 +145,31 @@ namespace FactoryFrenzy.VR
 
         private void Start()
         {
-            m_Camera = Camera.main;
+            m_Camera = FindPlayerCamera();
             BuildPalette();
-            SelectElement(0);
+            if (elementPrefabs != null && elementPrefabs.Count > 0)
+                SelectElement(FindFirstIndex(ActiveCategory));
         }
 
         private void LateUpdate()
         {
             if (!followHead || m_CanvasTransform == null) return;
 
-            if (m_Camera == null) m_Camera = Camera.main;
+            if (m_Camera == null) m_Camera = FindPlayerCamera();
             if (m_Camera == null) return;
 
             PlacePaletteInFrontOfCamera();
+        }
+
+        private static Camera FindPlayerCamera()
+        {
+            Camera main = Camera.main;
+            if (main != null) return main;
+
+            Camera[] cameras = FindObjectsOfType<Camera>();
+            foreach (Camera camera in cameras)
+                if (camera.enabled && camera.gameObject.activeInHierarchy) return camera;
+            return cameras.Length > 0 ? cameras[0] : null;
         }
 
         // ---------------------------------------------------------------------
@@ -144,10 +182,10 @@ namespace FactoryFrenzy.VR
             if (m_Canvas != null) return;
 
             GameObject canvasGo = new GameObject("VR_Palette");
+            m_Canvas = canvasGo.AddComponent<Canvas>();
+            // Canvas remplace le Transform par un RectTransform : conserver la reference ensuite.
             m_CanvasTransform = canvasGo.transform;
             m_CanvasTransform.localScale = Vector3.one * paletteScale;
-
-            m_Canvas = canvasGo.AddComponent<Canvas>();
             m_Canvas.renderMode = RenderMode.WorldSpace;
             m_Canvas.worldCamera = m_Camera;
 
@@ -174,6 +212,20 @@ namespace FactoryFrenzy.VR
             // Ligne d'etat en haut de la palette.
             m_StatusText = CreateText(canvasGo.transform, "Selection : -", 20f, 34f);
 
+            // Choix rapide par catégories : seules les plateformes OU les pièges
+            // sont affichés. La palette reste ainsi courte et lisible en RV.
+            GameObject categories = new GameObject("Categories", typeof(RectTransform));
+            categories.transform.SetParent(canvasGo.transform, false);
+            HorizontalLayoutGroup categoryLayout = categories.AddComponent<HorizontalLayoutGroup>();
+            categoryLayout.spacing = 6f;
+            categoryLayout.childForceExpandWidth = true;
+            categoryLayout.childForceExpandHeight = false;
+            LayoutElement categoryElement = categories.AddComponent<LayoutElement>();
+            categoryElement.preferredHeight = 40f;
+            categoryElement.minHeight = 40f;
+            AddCategoryButton(categories.transform, "PLATEFORMES", ElementCategory.Platforms, new Color(0.10f, 0.42f, 0.80f, 0.98f));
+            AddCategoryButton(categories.transform, "PIEGES", ElementCategory.Traps, new Color(0.75f, 0.22f, 0.12f, 0.98f));
+
             // Nom du fichier JSON : saisissable au clavier avec le simulateur
             // ou avec le clavier virtuel du casque.
             m_LevelNameInput = CreateInputField(canvasGo.transform, "Nom du niveau", "DemoScene_Forest", 38f);
@@ -190,20 +242,78 @@ namespace FactoryFrenzy.VR
                 Button button = CreateButton(canvasGo.transform, GetPrefabLabel(prefab, i), s_ButtonColor, 38f);
                 button.onClick.AddListener(() => SelectElement(index));
 
-                m_TypeButtonBackgrounds.Add(button.targetGraphic as Image);
+                Image buttonImage = button.targetGraphic as Image;
+                m_ElementButtons.Add(new ElementButton
+                {
+                    index = index,
+                    category = GetCategory(prefab),
+                    gameObject = button.gameObject,
+                    background = buttonImage
+                });
             }
 
             // Boutons d'action.
-            Button createButton = CreateButton(canvasGo.transform, "Creer", s_ActionColor, 42f);
+            Button createButton = CreateButton(canvasGo.transform, "CREER L'ELEMENT", s_ActionColor, 46f);
             createButton.onClick.AddListener(CreateSelected);
 
-            Button deleteButton = CreateButton(canvasGo.transform, "Supprimer", s_ActionColor, 42f);
+            Button deleteButton = CreateButton(canvasGo.transform, "SUPPRIMER SELECTION", new Color(0.65f, 0.16f, 0.14f, 0.98f), 42f);
             deleteButton.onClick.AddListener(() => onDeleteRequested.Invoke());
 
-            Button exportButton = CreateButton(canvasGo.transform, "Exporter (JSON)", s_ActionColor, 42f);
+            Button exportButton = CreateButton(canvasGo.transform, "EXPORTER JSON", new Color(0.30f, 0.28f, 0.65f, 0.98f), 42f);
             exportButton.onClick.AddListener(() => onExportRequested.Invoke());
 
+            CreateText(canvasGo.transform, "A : selection multiple | B : supprimer | X/F5 : exporter", 13f, 26f);
+            SetCategory(ActiveCategory, false);
             PlacePaletteInFrontOfCamera();
+        }
+
+        private void AddCategoryButton(Transform parent, string label, ElementCategory category, Color color)
+        {
+            Button button = CreateButton(parent, label, color, 40f);
+            button.onClick.AddListener(() => SetCategory(category));
+            m_CategoryButtonBackgrounds[category] = button.targetGraphic as Image;
+        }
+
+        public void SetCategory(ElementCategory category)
+        {
+            SetCategory(category, true);
+        }
+
+        private void SetCategory(ElementCategory category, bool feedback)
+        {
+            ActiveCategory = category;
+            foreach (ElementButton entry in m_ElementButtons)
+                entry.gameObject.SetActive(entry.category == category);
+
+            foreach (KeyValuePair<ElementCategory, Image> entry in m_CategoryButtonBackgrounds)
+            {
+                if (entry.Value == null) continue;
+                Color color = entry.Key == ElementCategory.Platforms
+                    ? new Color(0.10f, 0.42f, 0.80f, 0.98f)
+                    : new Color(0.75f, 0.22f, 0.12f, 0.98f);
+                entry.Value.color = entry.Key == category ? Color.Lerp(color, Color.white, 0.15f) : color * 0.62f;
+            }
+
+            if (feedback) VRLevelEvents.RaiseFeedback(VRFeedbackType.Select);
+            UpdatePaletteState();
+        }
+
+        private static ElementCategory GetCategory(GameObject prefab)
+        {
+            VR_EditableElement element = prefab != null ? prefab.GetComponent<VR_EditableElement>() : null;
+            string type = element != null && !string.IsNullOrEmpty(element.elementType)
+                ? element.elementType
+                : VR_EditableElement.GetTypeForSourcePrefab(prefab != null ? prefab.name : string.Empty);
+            return type.StartsWith("Trap_", System.StringComparison.OrdinalIgnoreCase)
+                ? ElementCategory.Traps
+                : ElementCategory.Platforms;
+        }
+
+        private int FindFirstIndex(ElementCategory category)
+        {
+            for (int i = 0; i < elementPrefabs.Count; i++)
+                if (elementPrefabs[i] != null && GetCategory(elementPrefabs[i]) == category) return i;
+            return 0;
         }
 
         /// <summary>Met a jour le nom utilise par l'export JSON.</summary>
@@ -270,7 +380,12 @@ namespace FactoryFrenzy.VR
             if (flatForward.sqrMagnitude < 0.0001f) flatForward = Vector3.forward;
             flatForward.Normalize();
 
-            m_CanvasTransform.position = origin + flatForward * paletteDistance + Vector3.up * paletteVerticalOffset;
+            Vector3 right = m_Camera != null ? m_Camera.transform.right : Vector3.right;
+            right.y = 0f;
+            if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
+            right.Normalize();
+            m_CanvasTransform.position = origin + flatForward * paletteDistance +
+                                         right * paletteHorizontalOffset + Vector3.up * paletteVerticalOffset;
 
             // Le Canvas (axe +Z) est tourne vers la camera pour rester lisible.
             Vector3 lookDirection = origin - m_CanvasTransform.position;
@@ -296,6 +411,8 @@ namespace FactoryFrenzy.VR
             }
 
             SelectedIndex = Mathf.Clamp(index, 0, elementPrefabs.Count - 1);
+            if (SelectedPrefab != null && GetCategory(SelectedPrefab) != ActiveCategory)
+                SetCategory(GetCategory(SelectedPrefab), false);
             VRLevelEvents.RaiseFeedback(VRFeedbackType.Select);
             UpdatePaletteState();
         }
@@ -356,6 +473,8 @@ namespace FactoryFrenzy.VR
             Vector3 position;
             Quaternion rotation;
 
+            if (m_Camera == null) m_Camera = FindPlayerCamera();
+
             if (spawnInFrontOfHead && m_Camera != null)
             {
                 Vector3 forward = m_Camera.transform.forward;
@@ -364,13 +483,14 @@ namespace FactoryFrenzy.VR
                 flatForward.Normalize();
 
                 position = m_Camera.transform.position + flatForward * spawnDistance;
-                position.y = spawnHeight;
+                position.y = GetSafeSpawnHeight(position);
 
                 rotation = Quaternion.LookRotation(flatForward, Vector3.up);
             }
             else
             {
                 position = spawnPoint != null ? spawnPoint.position : new Vector3(0f, spawnHeight, 0f);
+                position.y = GetSafeSpawnHeight(position);
                 rotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
             }
 
@@ -416,6 +536,34 @@ namespace FactoryFrenzy.VR
             UpdatePaletteState();
         }
 
+        /// <summary>Hauteur de creation au-dessus du sol physique et du decor forestier visible.</summary>
+        public float GetSafeSpawnHeight(Vector3 worldPosition)
+        {
+            float height = spawnHeight;
+            Ray ray = new Ray(new Vector3(worldPosition.x, 100f, worldPosition.z), Vector3.down);
+            foreach (RaycastHit hit in Physics.RaycastAll(ray, 200f, ~0, QueryTriggerInteraction.Ignore))
+                height = Mathf.Max(height, hit.point.y + spawnSurfaceClearance);
+
+            foreach (Renderer renderer in FindObjectsOfType<Renderer>())
+            {
+                if (!renderer.enabled || !renderer.gameObject.activeInHierarchy || !IsVisualGround(renderer.name)) continue;
+                Bounds bounds = renderer.bounds;
+                if (worldPosition.x >= bounds.min.x && worldPosition.x <= bounds.max.x &&
+                    worldPosition.z >= bounds.min.z && worldPosition.z <= bounds.max.z)
+                    height = Mathf.Max(height, bounds.max.y + spawnSurfaceClearance);
+            }
+            return height;
+        }
+
+        private bool IsVisualGround(string rendererName)
+        {
+            if (visualGroundKeywords == null) return false;
+            string value = rendererName.ToLowerInvariant();
+            foreach (string keyword in visualGroundKeywords)
+                if (!string.IsNullOrEmpty(keyword) && value.Contains(keyword.ToLowerInvariant())) return true;
+            return false;
+        }
+
         // ---------------------------------------------------------------------
         // Mise a jour visuelle de la palette
         // ---------------------------------------------------------------------
@@ -428,12 +576,11 @@ namespace FactoryFrenzy.VR
                 m_StatusText.text = $"Selection : {label}\nElements poses : {VR_EditableElement.All.Count}";
             }
 
-            for (int i = 0; i < m_TypeButtonBackgrounds.Count; i++)
+            for (int i = 0; i < m_ElementButtons.Count; i++)
             {
-                Image image = m_TypeButtonBackgrounds[i];
-                if (image == null) continue;
-
-                image.color = (i == SelectedIndex) ? s_SelectedColor : s_ButtonColor;
+                ElementButton entry = m_ElementButtons[i];
+                if (entry.background == null) continue;
+                entry.background.color = (entry.index == SelectedIndex) ? s_SelectedColor : s_ButtonColor;
             }
         }
 

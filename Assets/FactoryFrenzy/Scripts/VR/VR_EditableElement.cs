@@ -53,6 +53,8 @@ namespace FactoryFrenzy.VR
         // -----------------------------------------------------------------
 
         private static readonly List<VR_EditableElement> s_All = new List<VR_EditableElement>();
+        [System.NonSerialized] private MaterialPropertyBlock m_PropertyBlock;
+        private bool m_IsSelected;
 
         public static IReadOnlyList<VR_EditableElement> All => s_All;
 
@@ -136,6 +138,35 @@ namespace FactoryFrenzy.VR
 
         public void OnGrabbed() { }
         public void OnReleased() { }
-        public void SetSelected(bool selected) { }
+
+        /// <summary>Met en evidence l'element cible/selectionne sans instancier de materiau.</summary>
+        public void SetSelected(bool selected)
+        {
+            if (m_IsSelected == selected) return;
+            m_IsSelected = selected;
+            if (m_PropertyBlock == null) m_PropertyBlock = new MaterialPropertyBlock();
+
+            foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
+            {
+                if (renderer == null) continue;
+                renderer.GetPropertyBlock(m_PropertyBlock);
+                if (selected)
+                {
+                    Color color = new Color(1f, 0.66f, 0.08f, 1f);
+                    if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_BaseColor"))
+                        m_PropertyBlock.SetColor("_BaseColor", color);
+                    if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_Color"))
+                        m_PropertyBlock.SetColor("_Color", color);
+                    if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_EmissionColor"))
+                        m_PropertyBlock.SetColor("_EmissionColor", color * 0.35f);
+                }
+                else
+                {
+                    // Les objets de l'editeur n'ont pas d'autre PropertyBlock runtime.
+                    m_PropertyBlock.Clear();
+                }
+                renderer.SetPropertyBlock(m_PropertyBlock);
+            }
+        }
     }
 }

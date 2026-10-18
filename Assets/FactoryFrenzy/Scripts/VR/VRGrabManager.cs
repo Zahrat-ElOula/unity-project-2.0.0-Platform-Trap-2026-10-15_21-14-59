@@ -225,5 +225,23 @@ namespace FactoryFrenzy.VR
             grab.selectExited.RemoveListener(OnSelectExited);
             m_Tracked.Remove(grab);
         }
+
+        /// <summary>
+        /// Force le relâchement de l'élément actuellement tenu (appelé par VRDeleteManager avant suppression).
+        /// </summary>
+        public void ForceReleaseCurrentElement()
+        {
+            if (CurrentElement != null)
+            {
+                // On remet l'état visuel à "non sélectionné"
+                CurrentElement.SetSelected(false);
+            }
+
+            CurrentElement = null;
+            IsGrabbing = false;
+
+            // On notifie les autres systèmes (comme le feedback) que l'état a changé
+            OnGrabStateChanged?.Invoke(false);
+        }
     }
 }
