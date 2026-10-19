@@ -151202,19 +151202,19 @@ MonoBehaviour:
   saveClip: {fileID: 8300000, guid: 36680b0436d537f46b78c34c2dcb5a7e, type: 3}
   errorClip: {fileID: 8300000, guid: 53e0e30796d7f5d41a31fb275811dd7a, type: 3}
   generateDefaultClips: 0
-  volume: 0.6
+  volume: 1
   leftController: {fileID: 1406879978}
   rightController: {fileID: 1406879977}
   vibrateBothControllers: 1
-  selectAmplitude: 0.15
+  selectAmplitude: 1
   selectDuration: 0.05
-  placeAmplitude: 0.25
+  placeAmplitude: 1
   placeDuration: 0.08
-  deleteAmplitude: 0.4
+  deleteAmplitude: 1
   deleteDuration: 0.12
-  saveAmplitude: 0.35
+  saveAmplitude: 1
   saveDuration: 0.18
-  errorAmplitude: 0.6
+  errorAmplitude: 1
   errorDuration: 0.2
 --- !u!1001 &1851263419
 PrefabInstance:
