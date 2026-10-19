@@ -1081,7 +1081,7 @@ MonoBehaviour:
   selectionAction:
     m_UseReference: 0
     m_Action:
-      m_Name: 
+      m_Name: Selection
       m_Type: 0
       m_ExpectedControlType: 
       m_Id: 5252e9fc-4a8c-40c4-a377-4a5d00fb5ef9
@@ -1093,7 +1093,7 @@ MonoBehaviour:
   lockAction:
     m_UseReference: 0
     m_Action:
-      m_Name: 
+      m_Name: Lock
       m_Type: 0
       m_ExpectedControlType: 
       m_Id: a87c1025-d065-4fc1-a037-36e33f9e6cf2
@@ -1105,7 +1105,7 @@ MonoBehaviour:
   setStartAction:
     m_UseReference: 0
     m_Action:
-      m_Name: 
+      m_Name: Set Start
       m_Type: 0
       m_ExpectedControlType: 
       m_Id: 4f70d2db-4c1e-4f20-855e-f63465215dfa
@@ -1117,7 +1117,7 @@ MonoBehaviour:
   setEndAction:
     m_UseReference: 0
     m_Action:
-      m_Name: 
+      m_Name: Set End
       m_Type: 0
       m_ExpectedControlType: 
       m_Id: 4e04c6e3-962d-4318-9298-fb9827ccb9d2
@@ -151196,12 +151196,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioSource: {fileID: 0}
-  selectClip: {fileID: 0}
-  placeClip: {fileID: 0}
-  deleteClip: {fileID: 0}
-  saveClip: {fileID: 0}
-  errorClip: {fileID: 0}
-  generateDefaultClips: 1
+  selectClip: {fileID: 8300000, guid: 09a2f796b08954543abde0355a217b85, type: 3}
+  placeClip: {fileID: 8300000, guid: 3aedc0afb101a8c45b8a17b8432c3282, type: 3}
+  deleteClip: {fileID: 8300000, guid: 9618a8bfe3be6874fa7aeb1970435d05, type: 3}
+  saveClip: {fileID: 8300000, guid: 36680b0436d537f46b78c34c2dcb5a7e, type: 3}
+  errorClip: {fileID: 8300000, guid: 53e0e30796d7f5d41a31fb275811dd7a, type: 3}
+  generateDefaultClips: 0
   volume: 0.6
   leftController: {fileID: 1406879978}
   rightController: {fileID: 1406879977}

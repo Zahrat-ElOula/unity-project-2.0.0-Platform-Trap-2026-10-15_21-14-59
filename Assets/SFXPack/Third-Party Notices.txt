@@ -1,0 +1,4 @@
+Pixel Operator font files
+The supplied Fonts/pixel_operator/ReadMe.txt identifies Public Pixel Font / Pixel Operator, author GGBotNet, under CC0 1.0. The accompanying LICENSE.txt contains the license text. Preserve these notices with the font files.
+
+Unity UI / TextMesh Pro is a Unity dependency. Its package and any imported Essential Resources retain their Unity-supplied licensing and notices.
