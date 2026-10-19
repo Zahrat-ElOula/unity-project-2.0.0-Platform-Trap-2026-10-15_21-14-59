@@ -15,8 +15,11 @@ namespace FactoryFrenzy.VR
         public AudioClip deleteClip;
         public AudioClip saveClip;
         public AudioClip errorClip;
+
+        [Tooltip("Coche ceci pour générer des bips par défaut si les clips sont vides.")]
         public bool generateDefaultClips = true;
-        [Range(0f, 1f)] public float volume = 0.6f;
+
+        [Range(0f, 1f)] public float volume = 0.8f;
 
         [Header("Vibration (haptique)")]
         public XRBaseController leftController;
@@ -116,12 +119,12 @@ namespace FactoryFrenzy.VR
 
             if (!generateDefaultClips) return;
 
-            // Fréquences ajustées pour être plus distinctes
-            m_GeneratedSelect = CreateTone("FF_Select", 880f, 0.08f, 0.35f); // Aigu court
-            m_GeneratedPlace = CreateTone("FF_Place", 620f, 0.10f, 0.35f);   // Moyen
-            m_GeneratedDelete = CreateTone("FF_Delete", 320f, 0.16f, 0.40f); // Grave
-            m_GeneratedSave = CreateTone("FF_Save", 1180f, 0.18f, 0.35f);    // Très aigu (succès)
-            m_GeneratedError = CreateTone("FF_Error", 150f, 0.28f, 0.45f);    // Très grave (erreur)
+            // Génération des bips si aucune ressource n'est assignée
+            m_GeneratedSelect = CreateTone("FF_Select", 880f, 0.08f, 0.35f);
+            m_GeneratedPlace = CreateTone("FF_Place", 620f, 0.10f, 0.35f);
+            m_GeneratedDelete = CreateTone("FF_Delete", 320f, 0.16f, 0.40f);
+            m_GeneratedSave = CreateTone("FF_Save", 1180f, 0.18f, 0.35f);
+            m_GeneratedError = CreateTone("FF_Error", 150f, 0.28f, 0.45f);
         }
 
         private void PlayClip(AudioClip clip)
@@ -161,11 +164,6 @@ namespace FactoryFrenzy.VR
             }
             if (leftController == null && controllers.Length > 0) leftController = controllers[0];
             if (rightController == null && controllers.Length > 1) rightController = controllers[1];
-
-            if (leftController == null && rightController == null)
-            {
-                Debug.LogWarning("[VR-FP1-6] Aucune manette trouvee : seul le retour sonore sera joue.");
-            }
         }
 
         private void SendHaptics(float amplitude, float duration)

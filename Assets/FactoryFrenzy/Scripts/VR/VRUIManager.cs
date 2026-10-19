@@ -58,7 +58,7 @@ namespace FactoryFrenzy.VR
         private Canvas m_Canvas;
         private Transform m_CanvasTransform;
         private TMP_Text m_StatusText;
-        private TMP_Text m_ToastText; // NOUVEAU : Pour les messages temporaires
+        private TMP_Text m_ToastText; // Pour les messages clairs
         private float m_ToastTimer = 0f;
         private TMP_InputField m_LevelNameInput;
         private readonly List<ElementButton> m_ElementButtons = new List<ElementButton>();
@@ -66,10 +66,19 @@ namespace FactoryFrenzy.VR
         private Camera m_Camera;
         private VRGrabManager m_GrabManager;
 
+        // Gestion des onglets
+        private GameObject m_TabContentCreation;
+        private GameObject m_TabContentEdition;
+        private GameObject m_TabContentSysteme;
+        private Button m_TabButtonCreation;
+        private Button m_TabButtonEdition;
+        private Button m_TabButtonSysteme;
+
         private static readonly Color s_ButtonColor = new Color(0.16f, 0.18f, 0.22f, 0.95f);
         private static readonly Color s_SelectedColor = new Color(0.95f, 0.55f, 0.10f, 1f);
         private static readonly Color s_ActionColor = new Color(0.20f, 0.35f, 0.55f, 0.95f);
-        private static readonly Color s_TextColor = new Color(0.95f, 0.95f, 0.95f, 1f);
+        private static readonly Color s_TabActiveColor = new Color(0.20f, 0.50f, 0.80f, 1f);
+        private static readonly Color s_TabInactiveColor = new Color(0.15f, 0.15f, 0.15f, 0.9f);
 
         private void Start()
         {
@@ -135,7 +144,7 @@ namespace FactoryFrenzy.VR
             canvasGo.AddComponent<TrackedDeviceGraphicRaycaster>();
 
             Image background = canvasGo.AddComponent<Image>();
-            background.color = new Color(0.05f, 0.06f, 0.08f, 0.95f); // Fond plus opaque
+            background.color = new Color(0.05f, 0.06f, 0.08f, 0.95f);
             background.raycastTarget = false;
 
             VerticalLayoutGroup layout = canvasGo.AddComponent<VerticalLayoutGroup>();
@@ -147,28 +156,47 @@ namespace FactoryFrenzy.VR
             layout.childForceExpandHeight = false;
             layout.childForceExpandWidth = true;
 
+            // 1. Status
             m_StatusText = CreateText(canvasGo.transform, "Selection : -", 20f, 34f);
 
-            // Création du Toast (caché au départ)
-            m_ToastText = CreateText(canvasGo.transform, "", 24f, 40f);
+            // 2. Toast (messages clairs)
+            m_ToastText = CreateText(canvasGo.transform, "", 22f, 40f);
             m_ToastText.color = Color.yellow;
             m_ToastText.gameObject.SetActive(false);
 
+            // 3. Barre d'onglets
+            GameObject tabBar = new GameObject("TabBar", typeof(RectTransform));
+            tabBar.transform.SetParent(canvasGo.transform, false);
+            HorizontalLayoutGroup tabLayout = tabBar.AddComponent<HorizontalLayoutGroup>();
+            tabLayout.spacing = 4f;
+            tabLayout.childForceExpandWidth = true;
+            tabLayout.childForceExpandHeight = false;
+            LayoutElement tabBarLayout = tabBar.AddComponent<LayoutElement>();
+            tabBarLayout.preferredHeight = 40f;
+
+            m_TabButtonCreation = CreateButton(tabBar.transform, "CREER", s_TabInactiveColor, 40f);
+            m_TabButtonCreation.onClick.AddListener(() => SetActiveTab(0));
+            m_TabButtonEdition = CreateButton(tabBar.transform, "EDITER", s_TabInactiveColor, 40f);
+            m_TabButtonEdition.onClick.AddListener(() => SetActiveTab(1));
+            m_TabButtonSysteme = CreateButton(tabBar.transform, "SYSTEME", s_TabInactiveColor, 40f);
+            m_TabButtonSysteme.onClick.AddListener(() => SetActiveTab(2));
+
+            // 4. Contenu des onglets
+            m_TabContentCreation = CreateTabContent(canvasGo.transform, "CreationContent");
+            m_TabContentEdition = CreateTabContent(canvasGo.transform, "EditionContent");
+            m_TabContentSysteme = CreateTabContent(canvasGo.transform, "SystemeContent");
+
+            // --- Onglet CREATION ---
             GameObject categories = new GameObject("Categories", typeof(RectTransform));
-            categories.transform.SetParent(canvasGo.transform, false);
+            categories.transform.SetParent(m_TabContentCreation.transform, false);
             HorizontalLayoutGroup categoryLayout = categories.AddComponent<HorizontalLayoutGroup>();
             categoryLayout.spacing = 6f;
             categoryLayout.childForceExpandWidth = true;
             categoryLayout.childForceExpandHeight = false;
             LayoutElement categoryElement = categories.AddComponent<LayoutElement>();
             categoryElement.preferredHeight = 40f;
-            categoryElement.minHeight = 40f;
             AddCategoryButton(categories.transform, "PLATEFORMES", ElementCategory.Platforms, new Color(0.10f, 0.42f, 0.80f, 0.98f));
             AddCategoryButton(categories.transform, "PIEGES", ElementCategory.Traps, new Color(0.75f, 0.22f, 0.12f, 0.98f));
-
-            m_LevelNameInput = CreateInputField(canvasGo.transform, "Nom du niveau", "DemoScene_Forest", 38f);
-            m_LevelNameInput.onValueChanged.AddListener(SetExportFileName);
-            SetExportFileName(m_LevelNameInput.text);
 
             for (int i = 0; i < elementPrefabs.Count; i++)
             {
@@ -176,7 +204,7 @@ namespace FactoryFrenzy.VR
                 GameObject prefab = elementPrefabs[i];
                 if (prefab == null) continue;
 
-                Button button = CreateButton(canvasGo.transform, GetPrefabLabel(prefab, i), s_ButtonColor, 38f);
+                Button button = CreateButton(m_TabContentCreation.transform, GetPrefabLabel(prefab, i), s_ButtonColor, 38f);
                 button.onClick.AddListener(() => SelectElement(index));
 
                 Image buttonImage = button.targetGraphic as Image;
@@ -189,27 +217,62 @@ namespace FactoryFrenzy.VR
                 });
             }
 
-            Button createButton = CreateButton(canvasGo.transform, "CREER L'ELEMENT", s_ActionColor, 46f);
+            Button createButton = CreateButton(m_TabContentCreation.transform, "CREER L'ELEMENT", s_ActionColor, 46f);
             createButton.onClick.AddListener(CreateSelected);
 
-            Button lockButton = CreateButton(canvasGo.transform, "VERROUILLER L'ELEMENT", new Color(0.5f, 0.5f, 0.5f, 1f), 42f);
+            // --- Onglet EDITER ---
+            Button lockButton = CreateButton(m_TabContentEdition.transform, "VERROUILLER L'ELEMENT", new Color(0.5f, 0.5f, 0.5f, 1f), 42f);
             lockButton.onClick.AddListener(ToggleLockOnHeldOrTargeted);
 
-            Button timePlusButton = CreateButton(canvasGo.transform, "Temps Plateforme +1s", new Color(0.2f, 0.6f, 0.2f, 0.98f), 38f);
-            timePlusButton.onClick.AddListener(() => ModifyDuration(1f));
-
-            Button timeMinusButton = CreateButton(canvasGo.transform, "Temps Plateforme -1s", new Color(0.6f, 0.2f, 0.2f, 0.98f), 38f);
-            timeMinusButton.onClick.AddListener(() => ModifyDuration(-1f));
-
-            Button deleteButton = CreateButton(canvasGo.transform, "SUPPRIMER SELECTION", new Color(0.65f, 0.16f, 0.14f, 0.98f), 42f);
+            Button deleteButton = CreateButton(m_TabContentEdition.transform, "SUPPRIMER SELECTION", new Color(0.65f, 0.16f, 0.14f, 0.98f), 42f);
             deleteButton.onClick.AddListener(() => onDeleteRequested.Invoke());
 
-            Button exportButton = CreateButton(canvasGo.transform, "EXPORTER JSON", new Color(0.30f, 0.28f, 0.65f, 0.98f), 42f);
+            // --- Onglet SYSTEME ---
+            Button timePlusButton = CreateButton(m_TabContentSysteme.transform, "Temps Plateforme +1s", new Color(0.2f, 0.6f, 0.2f, 0.98f), 38f);
+            timePlusButton.onClick.AddListener(() => ModifyDuration(1f));
+
+            Button timeMinusButton = CreateButton(m_TabContentSysteme.transform, "Temps Plateforme -1s", new Color(0.6f, 0.2f, 0.2f, 0.98f), 38f);
+            timeMinusButton.onClick.AddListener(() => ModifyDuration(-1f));
+
+            m_LevelNameInput = CreateInputField(m_TabContentSysteme.transform, "Nom du niveau", "DemoScene_Forest", 38f);
+            m_LevelNameInput.onValueChanged.AddListener(SetExportFileName);
+            SetExportFileName(m_LevelNameInput.text);
+
+            Button exportButton = CreateButton(m_TabContentSysteme.transform, "EXPORTER JSON", new Color(0.30f, 0.28f, 0.65f, 0.98f), 42f);
             exportButton.onClick.AddListener(() => onExportRequested.Invoke());
 
-            CreateText(canvasGo.transform, "A/1 : depart | B/2 : arrivee | Y/L : verrouiller | X/F5 : exporter", 13f, 26f);
+            // Footer d'aide
+            CreateText(canvasGo.transform, "A/1 : depart | B/2 : arrivee | Y/L : verrouiller", 13f, 26f);
+
+            SetActiveTab(0); // Onglet par défaut
             SetCategory(ActiveCategory, false);
             PlacePaletteInFrontOfCamera();
+        }
+
+        private GameObject CreateTabContent(Transform parent, string name)
+        {
+            GameObject content = new GameObject(name, typeof(RectTransform));
+            content.transform.SetParent(parent, false);
+            VerticalLayoutGroup vLayout = content.AddComponent<VerticalLayoutGroup>();
+            vLayout.spacing = 4f;
+            vLayout.childForceExpandHeight = false;
+            vLayout.childForceExpandWidth = true;
+            vLayout.childControlHeight = false;
+            vLayout.childControlWidth = true;
+            LayoutElement layoutElement = content.AddComponent<LayoutElement>();
+            layoutElement.flexibleHeight = 1f; // Prend l'espace restant
+            return content;
+        }
+
+        private void SetActiveTab(int tabIndex)
+        {
+            m_TabContentCreation.SetActive(tabIndex == 0);
+            m_TabContentEdition.SetActive(tabIndex == 1);
+            m_TabContentSysteme.SetActive(tabIndex == 2);
+
+            m_TabButtonCreation.image.color = tabIndex == 0 ? s_TabActiveColor : s_TabInactiveColor;
+            m_TabButtonEdition.image.color = tabIndex == 1 ? s_TabActiveColor : s_TabInactiveColor;
+            m_TabButtonSysteme.image.color = tabIndex == 2 ? s_TabActiveColor : s_TabInactiveColor;
         }
 
         public void ToggleLockOnHeldOrTargeted()
