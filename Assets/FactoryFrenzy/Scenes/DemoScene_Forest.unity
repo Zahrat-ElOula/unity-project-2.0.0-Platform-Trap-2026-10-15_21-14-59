@@ -1090,6 +1090,42 @@ MonoBehaviour:
       m_SingletonActionBindings: []
       m_Flags: 0
     m_Reference: {fileID: 0}
+  lockAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: 
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: a87c1025-d065-4fc1-a037-36e33f9e6cf2
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  setStartAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: 
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 4f70d2db-4c1e-4f20-855e-f63465215dfa
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 0}
+  setEndAction:
+    m_UseReference: 0
+    m_Action:
+      m_Name: 
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 4e04c6e3-962d-4318-9298-fb9827ccb9d2
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 0}
   preventDeleteWhileGrabbing: 1
   maxDeleteDistance: 10
   logDeletes: 1
@@ -2685,9 +2721,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 199589426210347778, guid: a29d452ee24577e46b40bd1b5396acc5,
         type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 199589426210347778, guid: a29d452ee24577e46b40bd1b5396acc5,
+        type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 55d3cd30aa20d634f8c2388d479742d1, type: 2}
+    - target: {fileID: 199684319940457190, guid: a29d452ee24577e46b40bd1b5396acc5,
+        type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 199684319940457190, guid: a29d452ee24577e46b40bd1b5396acc5,
         type: 3}
       propertyPath: m_Materials.Array.data[0]
@@ -3544,6 +3590,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &130286903
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4798,6 +4846,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &183229109
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5128,7 +5178,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10437,6 +10486,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &222889599
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11471,6 +11522,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &248918158
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11762,7 +11815,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -17309,7 +17361,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -22343,7 +22394,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -27455,6 +27505,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &309220014
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -28210,7 +28262,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -33353,7 +33404,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -38481,7 +38531,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -46628,6 +46677,16 @@ PrefabInstance:
       propertyPath: InitialModule.startColor.minColor.r
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 199095009894130194, guid: b8cd47ec0ed55ef4a81e264386f6aee5,
+        type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 199981330346920870, guid: b8cd47ec0ed55ef4a81e264386f6aee5,
+        type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -47524,7 +47583,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -59491,7 +59549,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -64621,6 +64678,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &597876995
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -65297,7 +65356,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -75599,7 +75657,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -80566,6 +80623,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &833725025
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -82032,7 +82091,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -87612,7 +87670,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -93158,7 +93215,7 @@ Transform:
   m_GameObject: {fileID: 966238294}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.9224167, y: 21.606655, z: -36.895187}
+  m_LocalPosition: {x: 1.28, y: -1.88, z: -18.65}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -97786,6 +97843,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &1166787522
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -98518,7 +98577,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -103816,6 +103874,16 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
+    - target: {fileID: 199095009894130194, guid: b8cd47ec0ed55ef4a81e264386f6aee5,
+        type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 199981330346920870, guid: b8cd47ec0ed55ef4a81e264386f6aee5,
+        type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -104967,6 +105035,11 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
+    - target: {fileID: 199934834234751708, guid: a27d6e7d56bdc84479be345a168e6c70,
+        type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -105302,7 +105375,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -112382,7 +112454,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -118255,6 +118326,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: XR Device Simulator
       objectReference: {fileID: 0}
+    - target: {fileID: 6598815579406187037, guid: 18ddb545287c546e19cc77dc9fbb2189,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -119251,7 +119327,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -124847,7 +124922,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -129846,7 +129920,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -135139,6 +135212,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 1
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &1539280811
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -136461,9 +136536,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 199589426210347778, guid: a29d452ee24577e46b40bd1b5396acc5,
         type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 199589426210347778, guid: a29d452ee24577e46b40bd1b5396acc5,
+        type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 55d3cd30aa20d634f8c2388d479742d1, type: 2}
+    - target: {fileID: 199684319940457190, guid: a29d452ee24577e46b40bd1b5396acc5,
+        type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 199684319940457190, guid: a29d452ee24577e46b40bd1b5396acc5,
         type: 3}
       propertyPath: m_Materials.Array.data[0]
@@ -137054,6 +137139,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &1638182719
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -140640,7 +140727,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -145615,7 +145701,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -151877,7 +151962,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -157524,7 +157608,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -162585,7 +162668,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -167650,7 +167732,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -173214,7 +173295,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -178346,7 +178426,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -183773,6 +183852,8 @@ MonoBehaviour:
   duration: 3
   isLocked: 0
   hasMovement: 0
+  lockedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lockedEmission: {r: 0.1, g: 0.1, b: 0.1, a: 1}
 --- !u!1001 &2006490106
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -184233,7 +184314,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -190215,7 +190295,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -195752,23 +195831,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4482437886289408, guid: 1d9cc67243350f643b8c562ed0503c49, type: 3}
       propertyPath: m_LocalScale.x
-      value: 5
+      value: 39.34
+      objectReference: {fileID: 0}
+    - target: {fileID: 4482437886289408, guid: 1d9cc67243350f643b8c562ed0503c49, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.88
       objectReference: {fileID: 0}
     - target: {fileID: 4482437886289408, guid: 1d9cc67243350f643b8c562ed0503c49, type: 3}
       propertyPath: m_LocalScale.z
-      value: 5
+      value: 61
       objectReference: {fileID: 0}
     - target: {fileID: 4482437886289408, guid: 1d9cc67243350f643b8c562ed0503c49, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 23.6
       objectReference: {fileID: 0}
     - target: {fileID: 4482437886289408, guid: 1d9cc67243350f643b8c562ed0503c49, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -9.16
       objectReference: {fileID: 0}
     - target: {fileID: 4482437886289408, guid: 1d9cc67243350f643b8c562ed0503c49, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -20.1
       objectReference: {fileID: 0}
     - target: {fileID: 4482437886289408, guid: 1d9cc67243350f643b8c562ed0503c49, type: 3}
       propertyPath: m_LocalRotation.w
@@ -195907,7 +195990,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
