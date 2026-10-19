@@ -47,6 +47,15 @@ namespace FactoryFrenzy.VR
             IsGrabbing = false;
         }
 
+        private void LateUpdate()
+        {
+            // Sécurité : Si on tient un objet qui est verrouillé, on le relâche
+            if (CurrentElement != null && CurrentElement.isLocked)
+            {
+                ForceReleaseCurrentElement();
+            }
+        }
+
         public void RegisterElement(GameObject elementObject)
         {
             if (elementObject == null) return;
@@ -84,7 +93,6 @@ namespace FactoryFrenzy.VR
             VR_EditableElement element = GetElementFromArgs(args);
             if (element == null) return;
 
-            // VR-FP2-2 : Vérification du verrou
             if (element.isLocked)
             {
                 Debug.Log($"[VR-FP2-2] Attrape refusee : {element.name} est verrouille.");
@@ -160,10 +168,7 @@ namespace FactoryFrenzy.VR
 
         public void ForceReleaseCurrentElement()
         {
-            if (CurrentElement != null)
-            {
-                CurrentElement.SetSelected(false);
-            }
+            if (CurrentElement != null) CurrentElement.SetSelected(false);
             CurrentElement = null;
             IsGrabbing = false;
             OnGrabStateChanged?.Invoke(false);

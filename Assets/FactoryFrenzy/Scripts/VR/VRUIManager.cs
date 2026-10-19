@@ -10,7 +10,7 @@ namespace FactoryFrenzy.VR
     [DisallowMultipleComponent]
     public class VRUIManager : MonoBehaviour
     {
-        [Header("Prefabs disponibles (Assets/FactoryFrenzy/Prefabs_VR_Editor)")]
+        [Header("Prefabs disponibles")]
         public List<GameObject> elementPrefabs = new List<GameObject>();
         public string[] elementLabels;
 
@@ -58,6 +58,8 @@ namespace FactoryFrenzy.VR
         private Canvas m_Canvas;
         private Transform m_CanvasTransform;
         private TMP_Text m_StatusText;
+        private TMP_Text m_ToastText; // NOUVEAU : Pour les messages temporaires
+        private float m_ToastTimer = 0f;
         private TMP_InputField m_LevelNameInput;
         private readonly List<ElementButton> m_ElementButtons = new List<ElementButton>();
         private readonly Dictionary<ElementCategory, Image> m_CategoryButtonBackgrounds = new Dictionary<ElementCategory, Image>();
@@ -84,6 +86,26 @@ namespace FactoryFrenzy.VR
             if (m_Camera == null) m_Camera = FindPlayerCamera();
             if (m_Camera == null) return;
             PlacePaletteInFrontOfCamera();
+        }
+
+        private void Update()
+        {
+            if (m_ToastTimer > 0f)
+            {
+                m_ToastTimer -= Time.deltaTime;
+                if (m_ToastTimer <= 0f && m_ToastText != null)
+                {
+                    m_ToastText.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        public void ShowToast(string message, float duration = 2.5f)
+        {
+            if (m_ToastText == null) return;
+            m_ToastText.text = message;
+            m_ToastText.gameObject.SetActive(true);
+            m_ToastTimer = duration;
         }
 
         private static Camera FindPlayerCamera()
@@ -113,7 +135,7 @@ namespace FactoryFrenzy.VR
             canvasGo.AddComponent<TrackedDeviceGraphicRaycaster>();
 
             Image background = canvasGo.AddComponent<Image>();
-            background.color = new Color(0.05f, 0.06f, 0.08f, 0.85f);
+            background.color = new Color(0.05f, 0.06f, 0.08f, 0.95f); // Fond plus opaque
             background.raycastTarget = false;
 
             VerticalLayoutGroup layout = canvasGo.AddComponent<VerticalLayoutGroup>();
@@ -126,6 +148,11 @@ namespace FactoryFrenzy.VR
             layout.childForceExpandWidth = true;
 
             m_StatusText = CreateText(canvasGo.transform, "Selection : -", 20f, 34f);
+
+            // Création du Toast (caché au départ)
+            m_ToastText = CreateText(canvasGo.transform, "", 24f, 40f);
+            m_ToastText.color = Color.yellow;
+            m_ToastText.gameObject.SetActive(false);
 
             GameObject categories = new GameObject("Categories", typeof(RectTransform));
             categories.transform.SetParent(canvasGo.transform, false);
@@ -165,11 +192,9 @@ namespace FactoryFrenzy.VR
             Button createButton = CreateButton(canvasGo.transform, "CREER L'ELEMENT", s_ActionColor, 46f);
             createButton.onClick.AddListener(CreateSelected);
 
-            // VR-FP2-2 : Bouton Verrouiller
             Button lockButton = CreateButton(canvasGo.transform, "VERROUILLER L'ELEMENT", new Color(0.5f, 0.5f, 0.5f, 1f), 42f);
             lockButton.onClick.AddListener(ToggleLockOnHeldOrTargeted);
 
-            // VR-FP2-3 : Boutons de durée
             Button timePlusButton = CreateButton(canvasGo.transform, "Temps Plateforme +1s", new Color(0.2f, 0.6f, 0.2f, 0.98f), 38f);
             timePlusButton.onClick.AddListener(() => ModifyDuration(1f));
 
@@ -192,36 +217,40 @@ namespace FactoryFrenzy.VR
             if (m_GrabManager != null && m_GrabManager.CurrentElement != null)
             {
                 m_GrabManager.CurrentElement.ToggleLock();
+                ShowToast(m_GrabManager.CurrentElement.isLocked ? "Element verrouille" : "Element deverrouille");
                 return;
-            }
-
-            VRDeleteManager deleteManager = FindObjectOfType<VRDeleteManager>();
-            if (deleteManager != null) deleteManager.ToggleTargetedLock();
-        }
-
-        private void ModifyDuration(float amount)
-        {
-            if (m_GrabManager != null && m_GrabManager.CurrentElement != null)
-            {
-                if (m_GrabManager.CurrentElement.GetTypeName() == "Platform_Move")
-                {
-                    m_GrabManager.CurrentElement.AddDuration(amount);
-                    return;
-                }
             }
 
             VRDeleteManager deleteManager = FindObjectOfType<VRDeleteManager>();
             if (deleteManager != null)
             {
-                VR_EditableElement targeted = deleteManager.GetTargetedElement();
-                if (targeted != null && targeted.GetTypeName() == "Platform_Move")
-                {
-                    targeted.AddDuration(amount);
-                }
-                else
-                {
-                    Debug.LogWarning("[VR-FP2-3] Veuillez pointer ou tenir une plateforme mobile pour changer son temps.");
-                }
+                deleteManager.ToggleTargetedLock();
+                var targeted = deleteManager.GetTargetedElement();
+                if (targeted != null)
+                    ShowToast(targeted.isLocked ? "Element verrouille" : "Element deverrouille");
+            }
+        }
+
+        private void ModifyDuration(float amount)
+        {
+            VR_EditableElement target = null;
+
+            if (m_GrabManager != null && m_GrabManager.CurrentElement != null)
+                target = m_GrabManager.CurrentElement;
+            else
+            {
+                VRDeleteManager deleteManager = FindObjectOfType<VRDeleteManager>();
+                if (deleteManager != null) target = deleteManager.GetTargetedElement();
+            }
+
+            if (target != null && target.GetTypeName() == "Platform_Move")
+            {
+                target.AddDuration(amount);
+                ShowToast($"Duree : {target.duration:F1}s");
+            }
+            else
+            {
+                ShowToast("Pointez ou tenez une plateforme mobile !", 2f);
             }
         }
 
@@ -408,6 +437,7 @@ namespace FactoryFrenzy.VR
             {
                 Debug.LogWarning("[VR-FP1-2] Aucun prefab selectionne : impossible de creer l'element.");
                 VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+                ShowToast("Aucun element selectionne !", 2f);
                 return null;
             }
 
@@ -447,6 +477,7 @@ namespace FactoryFrenzy.VR
             VRLevelEvents.RaiseFeedback(VRFeedbackType.Place);
 
             Debug.Log($"[VR-FP1-2] Element cree : {created.name} en {position}.");
+            ShowToast("Element cree !", 1.5f);
             UpdatePaletteState();
 
             return created;
@@ -464,6 +495,7 @@ namespace FactoryFrenzy.VR
             }
 
             UpdatePaletteState();
+            ShowToast("Niveau vide.", 2f);
         }
 
         public float GetSafeSpawnHeight(Vector3 worldPosition)

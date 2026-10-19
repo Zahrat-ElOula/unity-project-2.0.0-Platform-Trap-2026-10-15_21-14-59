@@ -30,6 +30,7 @@ namespace FactoryFrenzy.VR
         private static readonly List<VR_EditableElement> s_All = new List<VR_EditableElement>();
         [System.NonSerialized] private MaterialPropertyBlock m_PropertyBlock;
         private bool m_IsSelected;
+        private GameObject m_LockIcon; // NOUVEAU : Icône visuelle de verrouillage
 
         public static IReadOnlyList<VR_EditableElement> All => s_All;
 
@@ -96,7 +97,6 @@ namespace FactoryFrenzy.VR
         public void OnGrabbed() { }
         public void OnReleased() { }
 
-        // VR-FP2-2 : Gestion du verrouillage
         public void ToggleLock() => SetLocked(!isLocked);
 
         public void SetLocked(bool locked)
@@ -105,16 +105,40 @@ namespace FactoryFrenzy.VR
             isLocked = locked;
             UpdateVisualState();
 
+            // Sécurité physique : empêche tout mouvement
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = true; // Toujours kinematic en mode édition
+
             if (isLocked)
             {
                 VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
                 Debug.Log($"[VR-FP2-2] Element verrouille : {name}");
+                CreateLockIcon();
             }
             else
             {
                 VRLevelEvents.RaiseFeedback(VRFeedbackType.Select);
                 Debug.Log($"[VR-FP2-2] Element deverrouille : {name}");
+                if (m_LockIcon != null) m_LockIcon.SetActive(false);
             }
+        }
+
+        private void CreateLockIcon()
+        {
+            if (m_LockIcon == null)
+            {
+                // Crée un petit cube rouge au-dessus de l'objet pour symboliser le cadenas
+                m_LockIcon = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                m_LockIcon.name = "LockIcon";
+                m_LockIcon.transform.SetParent(transform);
+                m_LockIcon.transform.localPosition = Vector3.up * 1.5f;
+                m_LockIcon.transform.localScale = Vector3.one * 0.2f;
+                Destroy(m_LockIcon.GetComponent<Collider>()); // Pas de collision
+
+                Renderer r = m_LockIcon.GetComponent<Renderer>();
+                if (r != null) r.material.color = Color.red;
+            }
+            m_LockIcon.SetActive(true);
         }
 
         public void SetSelected(bool selected)
@@ -130,7 +154,7 @@ namespace FactoryFrenzy.VR
 
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
             {
-                if (renderer == null) continue;
+                if (renderer == null || renderer.gameObject == m_LockIcon) continue;
                 renderer.GetPropertyBlock(m_PropertyBlock);
 
                 if (m_IsSelected)
@@ -158,7 +182,6 @@ namespace FactoryFrenzy.VR
             if (renderer.sharedMaterial.HasProperty("_EmissionColor")) block.SetColor("_EmissionColor", emissionColor);
         }
 
-        // VR-FP2-3 : Modification de la durée
         public void AddDuration(float seconds)
         {
             duration = Mathf.Max(0.1f, duration + seconds);
