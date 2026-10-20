@@ -97,6 +97,8 @@ namespace FactoryFrenzy.VR
             {
                 Debug.Log($"[VR-FP2-2] Attrape refusee : {element.name} est verrouille.");
                 VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+                // Affiche le message dans le casque
+                FindObjectOfType<VRUIManager>()?.ShowToast("Element verrouille !", 2f);
                 return;
             }
 

@@ -58,7 +58,8 @@ namespace FactoryFrenzy.VR
         private Canvas m_Canvas;
         private Transform m_CanvasTransform;
         private TMP_Text m_StatusText;
-        private TMP_Text m_ToastText; // Pour les messages clairs
+        private TMP_Text m_ToastText;
+        private GameObject m_ToastBackground;
         private float m_ToastTimer = 0f;
         private TMP_InputField m_LevelNameInput;
         private readonly List<ElementButton> m_ElementButtons = new List<ElementButton>();
@@ -66,7 +67,6 @@ namespace FactoryFrenzy.VR
         private Camera m_Camera;
         private VRGrabManager m_GrabManager;
 
-        // Gestion des onglets
         private GameObject m_TabContentCreation;
         private GameObject m_TabContentEdition;
         private GameObject m_TabContentSysteme;
@@ -102,18 +102,18 @@ namespace FactoryFrenzy.VR
             if (m_ToastTimer > 0f)
             {
                 m_ToastTimer -= Time.deltaTime;
-                if (m_ToastTimer <= 0f && m_ToastText != null)
+                if (m_ToastTimer <= 0f && m_ToastBackground != null)
                 {
-                    m_ToastText.gameObject.SetActive(false);
+                    m_ToastBackground.SetActive(false);
                 }
             }
         }
 
         public void ShowToast(string message, float duration = 2.5f)
         {
-            if (m_ToastText == null) return;
+            if (m_ToastText == null || m_ToastBackground == null) return;
             m_ToastText.text = message;
-            m_ToastText.gameObject.SetActive(true);
+            m_ToastBackground.SetActive(true);
             m_ToastTimer = duration;
         }
 
@@ -160,9 +160,18 @@ namespace FactoryFrenzy.VR
             m_StatusText = CreateText(canvasGo.transform, "Selection : -", 20f, 34f);
 
             // 2. Toast (messages clairs)
-            m_ToastText = CreateText(canvasGo.transform, "", 22f, 40f);
+            m_ToastBackground = new GameObject("ToastBackground", typeof(RectTransform));
+            m_ToastBackground.transform.SetParent(canvasGo.transform, false);
+            Image toastImg = m_ToastBackground.AddComponent<Image>();
+            toastImg.color = new Color(0f, 0f, 0f, 0.9f);
+            LayoutElement toastLayout = m_ToastBackground.AddComponent<LayoutElement>();
+            toastLayout.preferredHeight = 60f;
+            toastLayout.minHeight = 60f;
+
+            m_ToastText = CreateText(m_ToastBackground.transform, "", 26f, 60f);
             m_ToastText.color = Color.yellow;
-            m_ToastText.gameObject.SetActive(false);
+            m_ToastText.fontStyle = FontStyles.Bold;
+            m_ToastBackground.SetActive(false);
 
             // 3. Barre d'onglets
             GameObject tabBar = new GameObject("TabBar", typeof(RectTransform));
@@ -244,7 +253,7 @@ namespace FactoryFrenzy.VR
             // Footer d'aide
             CreateText(canvasGo.transform, "A/1 : depart | B/2 : arrivee | Y/L : verrouiller", 13f, 26f);
 
-            SetActiveTab(0); // Onglet par défaut
+            SetActiveTab(0);
             SetCategory(ActiveCategory, false);
             PlacePaletteInFrontOfCamera();
         }
@@ -260,7 +269,7 @@ namespace FactoryFrenzy.VR
             vLayout.childControlHeight = false;
             vLayout.childControlWidth = true;
             LayoutElement layoutElement = content.AddComponent<LayoutElement>();
-            layoutElement.flexibleHeight = 1f; // Prend l'espace restant
+            layoutElement.flexibleHeight = 1f;
             return content;
         }
 
@@ -277,20 +286,22 @@ namespace FactoryFrenzy.VR
 
         public void ToggleLockOnHeldOrTargeted()
         {
-            if (m_GrabManager != null && m_GrabManager.CurrentElement != null)
+            VR_EditableElement target = null;
+            if (m_GrabManager != null && m_GrabManager.CurrentElement != null) target = m_GrabManager.CurrentElement;
+            else
             {
-                m_GrabManager.CurrentElement.ToggleLock();
-                ShowToast(m_GrabManager.CurrentElement.isLocked ? "Element verrouille" : "Element deverrouille");
-                return;
+                VRDeleteManager deleteManager = FindObjectOfType<VRDeleteManager>();
+                if (deleteManager != null) target = deleteManager.GetTargetedElement();
             }
 
-            VRDeleteManager deleteManager = FindObjectOfType<VRDeleteManager>();
-            if (deleteManager != null)
+            if (target != null)
             {
-                deleteManager.ToggleTargetedLock();
-                var targeted = deleteManager.GetTargetedElement();
-                if (targeted != null)
-                    ShowToast(targeted.isLocked ? "Element verrouille" : "Element deverrouille");
+                target.ToggleLock();
+                ShowToast(target.isLocked ? "Element verrouille" : "Element deverrouille", 2f);
+            }
+            else
+            {
+                ShowToast("Pointez ou tenez un element !", 2f);
             }
         }
 
