@@ -163,7 +163,7 @@ namespace FactoryFrenzy.VR
             m_ToastBackground = new GameObject("ToastBackground", typeof(RectTransform));
             m_ToastBackground.transform.SetParent(canvasGo.transform, false);
             Image toastImg = m_ToastBackground.AddComponent<Image>();
-            toastImg.color = new Color(0f, 0f, 0f, 0.9f);
+            toastImg.color = new Color(0f, 0f, 0f, 0.95f); // Fond noir presque opaque
             LayoutElement toastLayout = m_ToastBackground.AddComponent<LayoutElement>();
             toastLayout.preferredHeight = 60f;
             toastLayout.minHeight = 60f;
@@ -251,7 +251,7 @@ namespace FactoryFrenzy.VR
             exportButton.onClick.AddListener(() => onExportRequested.Invoke());
 
             // Footer d'aide
-            CreateText(canvasGo.transform, "A/1 : depart | B/2 : arrivee | Y/L : verrouiller", 13f, 26f);
+            CreateText(canvasGo.transform, "A/1 : depart | B/2 : arrivee | Y/L : verrouiller | Trigger D : supprimer", 13f, 26f);
 
             SetActiveTab(0);
             SetCategory(ActiveCategory, false);

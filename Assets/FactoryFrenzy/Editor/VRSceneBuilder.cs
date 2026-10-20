@@ -472,7 +472,7 @@ namespace FactoryFrenzy.EditorTools
             deleteManager.rayInteractor = FindRightHandInteractionRayInScene();
             deleteManager.grabManager = UnityEngine.Object.FindObjectOfType<VRGrabManager>();
             deleteManager.preventDeleteWhileGrabbing = true;
-            deleteManager.createDefaultInputAction = true;
+            //deleteManager.createDefaultInputAction = true;
 
             if (deleteManager.rayInteractor == null)
             {

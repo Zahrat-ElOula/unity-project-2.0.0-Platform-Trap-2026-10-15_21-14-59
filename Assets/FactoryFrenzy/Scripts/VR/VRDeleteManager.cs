@@ -11,20 +11,23 @@ namespace FactoryFrenzy.VR
         public XRRayInteractor rayInteractor;
         public VRGrabManager grabManager;
 
-        [Header("Entree - Suppression")]
-        public bool createDefaultInputAction = true;
+        [Header("Entree - Suppression (Trigger Droit)")]
+        [Tooltip("Action pour supprimer (Trigger de la main droite).")]
         public InputActionProperty deleteAction;
+
+        [Header("Entree - Selection Multiple (Trigger Gauche)")]
+        [Tooltip("Action pour la selection multiple (Trigger de la main gauche).")]
         public InputActionProperty selectionAction;
 
-        [Header("Entree - Verrouillage (VR-FP2-2)")]
-        [Tooltip("Action pour verrouiller/deverrouiller (Bouton B / Touche L).")]
+        [Header("Entree - Verrouillage (Y main gauche)")]
+        [Tooltip("Action pour verrouiller/deverrouiller (Bouton Y de la main gauche).")]
         public InputActionProperty lockAction;
 
         [Header("Entree - Configuration Plateforme (VR-FP2-3)")]
-        [Tooltip("Action pour definir le point de depart (Bouton X / Touche 1).")]
+        [Tooltip("Action pour definir le point de depart (Bouton A main droite).")]
         public InputActionProperty setStartAction;
 
-        [Tooltip("Action pour definir le point d'arrivee (Bouton Y / Touche 2).")]
+        [Tooltip("Action pour definir le point d'arrivee (Bouton B main droite).")]
         public InputActionProperty setEndAction;
 
         [Header("Options")]
@@ -35,12 +38,6 @@ namespace FactoryFrenzy.VR
 
         public System.Collections.Generic.IReadOnlyList<VR_EditableElement> SelectedElements => m_SelectedElements;
         public int DeleteCount { get; private set; }
-
-        private InputAction m_BuiltInAction;
-        private InputAction m_BuiltInSelectionAction;
-        private InputAction m_BuiltInLockAction;
-        private InputAction m_BuiltInSetStartAction;
-        private InputAction m_BuiltInSetEndAction;
 
         private readonly System.Collections.Generic.List<VR_EditableElement> m_SelectedElements =
             new System.Collections.Generic.List<VR_EditableElement>();
@@ -53,93 +50,22 @@ namespace FactoryFrenzy.VR
 
         private void OnEnable()
         {
-            SetupInput();
+            if (deleteAction.action != null) { deleteAction.action.Enable(); deleteAction.action.performed += OnDeletePerformed; }
+            if (selectionAction.action != null) { selectionAction.action.Enable(); selectionAction.action.performed += OnSelectionPerformed; }
+            if (lockAction.action != null) { lockAction.action.Enable(); lockAction.action.performed += OnLockPerformed; }
+            if (setStartAction.action != null) { setStartAction.action.Enable(); setStartAction.action.performed += OnSetStartPerformed; }
+            if (setEndAction.action != null) { setEndAction.action.Enable(); setEndAction.action.performed += OnSetEndPerformed; }
         }
 
         private void OnDisable()
         {
-            if (m_BuiltInAction != null) { m_BuiltInAction.performed -= OnDeletePerformed; m_BuiltInAction.Disable(); m_BuiltInAction.Dispose(); m_BuiltInAction = null; }
             if (deleteAction.action != null) deleteAction.action.performed -= OnDeletePerformed;
-
-            if (m_BuiltInSelectionAction != null) { m_BuiltInSelectionAction.performed -= OnSelectionPerformed; m_BuiltInSelectionAction.Disable(); m_BuiltInSelectionAction.Dispose(); m_BuiltInSelectionAction = null; }
             if (selectionAction.action != null) selectionAction.action.performed -= OnSelectionPerformed;
-
-            if (m_BuiltInLockAction != null) { m_BuiltInLockAction.performed -= OnLockPerformed; m_BuiltInLockAction.Disable(); m_BuiltInLockAction.Dispose(); m_BuiltInLockAction = null; }
             if (lockAction.action != null) lockAction.action.performed -= OnLockPerformed;
-
-            if (m_BuiltInSetStartAction != null) { m_BuiltInSetStartAction.performed -= OnSetStartPerformed; m_BuiltInSetStartAction.Disable(); m_BuiltInSetStartAction.Dispose(); m_BuiltInSetStartAction = null; }
             if (setStartAction.action != null) setStartAction.action.performed -= OnSetStartPerformed;
-
-            if (m_BuiltInSetEndAction != null) { m_BuiltInSetEndAction.performed -= OnSetEndPerformed; m_BuiltInSetEndAction.Disable(); m_BuiltInSetEndAction.Dispose(); m_BuiltInSetEndAction = null; }
             if (setEndAction.action != null) setEndAction.action.performed -= OnSetEndPerformed;
 
             ClearSelection();
-        }
-
-        private void SetupInput()
-        {
-            // --- SUPPRESSION (Bouton B / Suppr) ---
-            if (deleteAction.action != null) { deleteAction.action.Enable(); deleteAction.action.performed += OnDeletePerformed; }
-            else if (createDefaultInputAction)
-            {
-                m_BuiltInAction = new InputAction("VR_Delete", InputActionType.Button);
-                m_BuiltInAction.AddBinding("<XRController>{RightHand}/secondaryButton"); // B
-                m_BuiltInAction.AddBinding("<Keyboard>/delete");
-                m_BuiltInAction.AddBinding("<Keyboard>/backspace");
-                m_BuiltInAction.performed += OnDeletePerformed;
-                m_BuiltInAction.Enable();
-            }
-
-            // --- SELECTION MULTIPLE (Bouton A / Tab) ---
-            if (enableMultiSelection)
-            {
-                if (selectionAction.action != null) { selectionAction.action.Enable(); selectionAction.action.performed += OnSelectionPerformed; }
-                else
-                {
-                    m_BuiltInSelectionAction = new InputAction("VR_ToggleSelection", InputActionType.Button);
-                    m_BuiltInSelectionAction.AddBinding("<XRController>{RightHand}/primaryButton"); // A
-                    m_BuiltInSelectionAction.AddBinding("<Keyboard>/tab");
-                    m_BuiltInSelectionAction.performed += OnSelectionPerformed;
-                    m_BuiltInSelectionAction.Enable();
-                }
-            }
-
-            // --- VERROUILLAGE (Bouton B / L) ---
-            // Note : le bouton B est aussi utilisé pour supprimer. 
-            // On utilise ici le bouton Trigger (Grip) pour le verrouillage pour éviter le conflit.
-            if (lockAction.action != null) { lockAction.action.Enable(); lockAction.action.performed += OnLockPerformed; }
-            else
-            {
-                m_BuiltInLockAction = new InputAction("VR_Lock", InputActionType.Button);
-                m_BuiltInLockAction.AddBinding("<XRController>{RightHand}/triggerButton"); // Gâchette
-                m_BuiltInLockAction.AddBinding("<Keyboard>/l");
-                m_BuiltInLockAction.performed += OnLockPerformed;
-                m_BuiltInLockAction.Enable();
-            }
-
-            // --- CONFIGURATION PLATEFORME (VR-FP2-3) ---
-            // Départ : Bouton X (main gauche) / Touche 1
-            if (setStartAction.action != null) { setStartAction.action.Enable(); setStartAction.action.performed += OnSetStartPerformed; }
-            else
-            {
-                m_BuiltInSetStartAction = new InputAction("VR_SetStart", InputActionType.Button);
-                m_BuiltInSetStartAction.AddBinding("<XRController>{LeftHand}/primaryButton"); // X
-                m_BuiltInSetStartAction.AddBinding("<Keyboard>/1");
-                m_BuiltInSetStartAction.performed += OnSetStartPerformed;
-                m_BuiltInSetStartAction.Enable();
-            }
-
-            // Arrivée : Bouton Y (main droite) / Touche 2
-            if (setEndAction.action != null) { setEndAction.action.Enable(); setEndAction.action.performed += OnSetEndPerformed; }
-            else
-            {
-                m_BuiltInSetEndAction = new InputAction("VR_SetEnd", InputActionType.Button);
-                m_BuiltInSetEndAction.AddBinding("<XRController>{RightHand}/secondaryButton"); // Y (conflit avec B ? utiliser Trigger)
-                // Pour éviter le conflit avec B, utilisons le bouton primaire de la main gauche ou une touche
-                m_BuiltInSetEndAction.AddBinding("<Keyboard>/2");
-                m_BuiltInSetEndAction.performed += OnSetEndPerformed;
-                m_BuiltInSetEndAction.Enable();
-            }
         }
 
         private void OnDeletePerformed(InputAction.CallbackContext context) => TryDelete();
@@ -262,7 +188,7 @@ namespace FactoryFrenzy.VR
                 m_SelectedElements.Add(element);
                 element.SetSelected(true);
             }
-            Debug.Log($"[VR-FP1-4] Selection : {m_SelectedElements.Count} element(s). B/Suppr pour supprimer.");
+            Debug.Log($"[VR-FP1-4] Selection : {m_SelectedElements.Count} element(s). Trigger D pour supprimer.");
             VRLevelEvents.RaiseFeedback(VRFeedbackType.Select);
         }
 
