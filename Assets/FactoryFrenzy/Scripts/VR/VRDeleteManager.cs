@@ -136,8 +136,46 @@ namespace FactoryFrenzy.VR
             return Vector3.zero;
         }
 
+       // public bool TryDelete()
+        //{
+        //    if (grabManager != null && grabManager.CurrentElement != null)
+        //    {
+        //        VR_EditableElement heldElement = grabManager.CurrentElement;
+        //        grabManager.ForceReleaseCurrentElement();
+        //        Debug.Log("[VR-FP1-4] Suppression de l'element tenu en main depuis la palette.");
+        //        return DeleteElement(heldElement);
+        //    }
+
+        //    if (preventDeleteWhileGrabbing && grabManager != null && grabManager.IsGrabbing)
+        //    {
+        //        Debug.Log("[VR-FP1-4] Suppression refusee : un element est en cours de manipulation.");
+        //        VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+        //        return false;
+        //    }
+
+        //    if (m_SelectedElements.Count > 0) return DeleteSelected();
+
+        //    VR_EditableElement element = GetTargetedElement();
+        //    if (element == null)
+        //    {
+        //        VRUIManager ui = FindObjectOfType<VRUIManager>();
+        //        if (ui != null) ui.ShowToast("Aucun element pointe !", 2f);
+        //        VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
+        //        return false;
+        //    }
+        //    return DeleteElement(element);
+        //}
+
         public bool TryDelete()
         {
+            // 1. Vérification : Ne rien faire si on clique sur l'UI
+            if (UnityEngine.EventSystems.EventSystem.current != null &&
+                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+            {
+                return false;
+            }
+
+            // 2. Vérification : Supprimer l'élément tenu en main
             if (grabManager != null && grabManager.CurrentElement != null)
             {
                 VR_EditableElement heldElement = grabManager.CurrentElement;
@@ -146,6 +184,7 @@ namespace FactoryFrenzy.VR
                 return DeleteElement(heldElement);
             }
 
+            // 3. Vérification : Interdire la suppression pendant une manipulation
             if (preventDeleteWhileGrabbing && grabManager != null && grabManager.IsGrabbing)
             {
                 Debug.Log("[VR-FP1-4] Suppression refusee : un element est en cours de manipulation.");
@@ -153,16 +192,20 @@ namespace FactoryFrenzy.VR
                 return false;
             }
 
+            // 4. Suppression multiple si des éléments sont sélectionnés
             if (m_SelectedElements.Count > 0) return DeleteSelected();
 
+            // 5. Suppression de l'élément pointé
             VR_EditableElement element = GetTargetedElement();
             if (element == null)
             {
+                // Message d'erreur seulement si on n'est pas sur l'UI
                 VRUIManager ui = FindObjectOfType<VRUIManager>();
                 if (ui != null) ui.ShowToast("Aucun element pointe !", 2f);
                 VRLevelEvents.RaiseFeedback(VRFeedbackType.Error);
                 return false;
             }
+
             return DeleteElement(element);
         }
 
