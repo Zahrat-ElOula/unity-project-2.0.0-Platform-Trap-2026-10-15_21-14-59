@@ -382,8 +382,18 @@ namespace FactoryFrenzy.VR
 
         private static TMP_InputField CreateInputField(Transform parent, string placeholderText, string initialValue, float height)
         {
+            // 1. Créer un conteneur horizontal
+            GameObject container = new GameObject("InputContainer", typeof(RectTransform));
+            container.transform.SetParent(parent, false);
+            HorizontalLayoutGroup hLayout = container.AddComponent<HorizontalLayoutGroup>();
+            hLayout.spacing = 5f; // Espace entre le texte et le bouton
+            hLayout.childForceExpandWidth = false;
+            hLayout.childControlWidth = true;
+            hLayout.childControlHeight = false;
+
+            // 2. Créer le champ de saisie (comme avant)
             GameObject go = new GameObject("Nom du fichier", typeof(RectTransform));
-            go.transform.SetParent(parent, false);
+            go.transform.SetParent(container.transform, false); // Parent = container
 
             Image image = go.AddComponent<Image>();
             image.color = new Color(0.12f, 0.13f, 0.16f, 0.95f);
@@ -392,6 +402,7 @@ namespace FactoryFrenzy.VR
             LayoutElement layout = go.AddComponent<LayoutElement>();
             layout.preferredHeight = height;
             layout.minHeight = height;
+            layout.flexibleWidth = 1; // Le champ prend tout l'espace disponible
 
             TMP_Text text = CreateText(go.transform, initialValue, 18f, height);
             text.alignment = TextAlignmentOptions.MidlineLeft;
@@ -405,6 +416,43 @@ namespace FactoryFrenzy.VR
             input.textComponent = text;
             input.placeholder = placeholder;
             input.text = initialValue;
+
+            // 3. Créer le bouton "Modifier"
+            GameObject btnGo = new GameObject("Btn_Modifier", typeof(RectTransform));
+            btnGo.transform.SetParent(container.transform, false);
+
+            Image btnImg = btnGo.AddComponent<Image>();
+            btnImg.color = new Color(0.2f, 0.4f, 0.6f, 1f); // Couleur bleue
+
+            Button btn = btnGo.AddComponent<Button>();
+            btn.targetGraphic = btnImg;
+
+            LayoutElement btnLayout = btnGo.AddComponent<LayoutElement>();
+            btnLayout.preferredWidth = height; // Bouton carré
+            btnLayout.preferredHeight = height;
+
+            // Texte du bouton (une icône ou "✎")
+            CreateText(btnGo.transform, "✎", 24f, height);
+
+            // 4. Action du bouton : Appeler une méthode pour ouvrir/fermer le clavier
+            // Note: On suppose que tu as un VRKeyboardSimple dans la scène
+            btn.onClick.AddListener(() => {
+                VRKeyboardSimple keyboard = Object.FindObjectOfType<VRKeyboardSimple>(true);
+                if (keyboard != null)
+                {
+                    // Si le clavier est inactif, on l'active et on lui donne la cible
+                    if (!keyboard.gameObject.activeSelf)
+                    {
+                        keyboard.targetInputField = input;
+                        keyboard.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        keyboard.gameObject.SetActive(false);
+                    }
+                }
+            });
+
             return input;
         }
 
