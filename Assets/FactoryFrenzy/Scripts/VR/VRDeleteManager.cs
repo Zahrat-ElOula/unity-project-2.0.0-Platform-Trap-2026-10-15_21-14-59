@@ -19,8 +19,8 @@ namespace FactoryFrenzy.VR
         [Tooltip("Action pour la selection multiple (Trigger de la main gauche).")]
         public InputActionProperty selectionAction;
 
-        [Header("Entree - Verrouillage (Y main gauche)")]
-        [Tooltip("Action pour verrouiller/deverrouiller (Bouton Y de la main gauche).")]
+        [Header("Entree - Verrouillage (X main gauche)")]
+        [Tooltip("Action pour verrouiller/deverrouiller (Bouton X de la main gauche).")]
         public InputActionProperty lockAction;
 
         [Header("Entree - Configuration Plateforme (VR-FP2-3)")]

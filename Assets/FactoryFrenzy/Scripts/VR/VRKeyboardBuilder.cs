@@ -23,7 +23,7 @@ public class VRKeyboardBuilder : MonoBehaviour
         if (keyboardParent == null || keyboardLogic == null) return;
 
         // On ajoute les chiffres et quelques caractères spéciaux à la chaîne
-        string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.";
+        string characters = "abcdefghijklmnopqrstuvwxyz0123456789-_.";
 
         for (int i = 0; i < characters.Length; i++)
         {
